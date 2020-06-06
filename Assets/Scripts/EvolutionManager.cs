@@ -9,7 +9,10 @@ public class EvolutionManager : MonoBehaviour
     public int populationPoolNumber;
     public int maximumNumberOfBrushStrokes;
 
-    Genes[] PopulationMemberOne;
+    Genes[]    PopulationMemberOne;
+
+
+    Material   rendering_material;
 
     // Start is called before the first frame update
     void Start()
@@ -18,6 +21,8 @@ public class EvolutionManager : MonoBehaviour
         CPUSystems.InitatePopulationMember(ref PopulationMemberOne);
 
 
+        rendering_material = new Material(Shader.Find("Unlit/PopulationShader"));
+        if (!rendering_material) Debug.LogError("Couldnt find the population shader");
     }
 
     // Update is called once per frame
