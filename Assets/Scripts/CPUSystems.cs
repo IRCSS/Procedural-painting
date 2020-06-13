@@ -16,8 +16,8 @@ static class CPUSystems{
 
             member.z_Rotation = Random.value * Mathf.PI * 2.0f;
 
-            member.scale_X    = Random.Range(0.1f, 0.5f);
-            member.scale_Y    = Random.Range(0.1f, 0.5f);
+            member.scale_X    = Random.Range(0.1f, 1.5f);
+            member.scale_Y    = Random.Range(0.1f, 1.5f);
 
             member.color_r    = Random.value;
             member.color_g    = Random.value;
@@ -28,5 +28,7 @@ static class CPUSystems{
         }
 
     }
+
+
 
 }

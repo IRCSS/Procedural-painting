@@ -10,3 +10,10 @@ public struct Genes
     public float color_r, color_g, color_b; // the colors of each stroke
     public int   texture_ID;                // such a waste of bit space. I only need 2 bits, but paying the cost 8 + padding
 }  // Struct size 8 *4 bytes + 1  * 4 = 36 bytes
+
+
+
+public struct PopulationMember
+{
+    int population_Handel;
+}

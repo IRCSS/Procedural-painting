@@ -1,0 +1,25 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CS_Fitness_Per_Pixel
+
+
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> _per_pixel_fitness;
+Texture2D<float4>   _original;
+Texture2D<float4>   _forged;
+SamplerState        sampler_original;
+SamplerState        sampler_forged;
+
+
+int                 _image_width;
+int                 _image_height;
+
+[numthreads(32,32,1)] // image dimensions should be a multiplye of 32 or power of 2. 1024 threads per group
+void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
+{
+
+    float2 coordinates = float2((float)id.x / (float)_image_width, (float)id.y / (float)_image_height);
+    _per_pixel_fitness[id.xy] = _original.SampleLevel(sampler_original, coordinates, 0);
+}
+

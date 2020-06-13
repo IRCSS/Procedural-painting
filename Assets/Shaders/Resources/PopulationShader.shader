@@ -11,7 +11,6 @@
 
         Pass
         {
-            Cull Off
             
             CGPROGRAM
             #pragma vertex   vert
@@ -74,8 +73,8 @@
                 
                 float4x4 brushModelMat =  
                 {
-                    v2_1.y * brushGene.scale.x,  -v2_1.x * brushGene.scale.y,      0., brushGene.position.x,
-                    v2_1.x * brushGene.scale.x,   v2_1.y * brushGene.scale.y,      0., brushGene.position.y,
+                    v2_1.y * brushGene.scale.x,  -v2_1.x * brushGene.scale.y,     0., brushGene.position.x,
+                    v2_1.x * brushGene.scale.x,   v2_1.y * brushGene.scale.y,     0., brushGene.position.y,
                                             0.,                          0.,      1.,                   0.,
                                             0.,                          0.,      0.,                   1.
                 };
