@@ -1,25 +1,93 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CS_Fitness_Per_Pixel
+#pragma kernel CS_Sum_Rows
+#pragma kernel CS_Sum_Column
 
 
+// ----------------------------------------------------------------------------------------------------
+// Resources for all the Kernels
+RWStructuredBuffer<float4>   _per_pixel_fitness;
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
-RWTexture2D<float4> _per_pixel_fitness;
-Texture2D<float4>   _original;
-Texture2D<float4>   _forged;
-SamplerState        sampler_original;
-SamplerState        sampler_forged;
+RWTexture2D<float4>          _debug_texture;
+SamplerState                 sampler_debug_texture;
+
+int                          _image_width;
+int                          _image_height;
+int                          _population_id_handel;
+// ---------------------------------------------------------------------------------------------------
+// Resources for CS_Fitness_Per_Pixel
+Texture2D<float4>            _original;
+Texture2D<float4>            _forged;
+SamplerState                 sampler_original;
+SamplerState                 sampler_forged;
+// ---------------------------------------------------------------------------------------------------
+// Resources for CS_Sum_Rows
+RWStructuredBuffer <float>   rows_sums_array;
+
+// ---------------------------------------------------------------------------------------------------
+// Resources for CS_Sum_Rows
+RWStructuredBuffer <float>   population_fitness_array;
 
 
-int                 _image_width;
-int                 _image_height;
+// ===================================================================================================
 
-[numthreads(32,32,1)] // image dimensions should be a multiplye of 32 or power of 2. 1024 threads per group
+inline int texture_pixel_to_structured_buffer_ID(uint2 texture_pixel) {
+    return _image_width * texture_pixel.y + texture_pixel.x;
+}
+
+[numthreads(32,32,1)]                                                                                    // image dimensions should be a multiplye of 32 or power of 2. 1024 threads per group
 void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 {
 
-    float2 coordinates = float2((float)id.x / (float)_image_width, (float)id.y / (float)_image_height);
-    _per_pixel_fitness[id.xy] = _original.SampleLevel(sampler_original, coordinates, 0);
+    float2 texutre_coordinates = float2((float)id.x / (float)_image_width, (float)id.y / (float)_image_height);
+
+    int structured_buffer_ID = texture_pixel_to_structured_buffer_ID(id.xy);
+
+    _per_pixel_fitness[structured_buffer_ID] = abs(_original.SampleLevel(sampler_original, texutre_coordinates, 0)
+        - _forged.SampleLevel(sampler_forged, texutre_coordinates, 0));
+    
 }
+
+
+
+// ----------------------------------------------------------------------------------------------------
+
+
+
+[numthreads(32, 1, 1)]                                                                                   // image dimensions should be a multiplye of 32 or power of 2. 32 threads per group
+void CS_Sum_Rows(uint3 id : SV_DispatchThreadID)
+{
+
+    int2  texutre_pixel = int2( 0, id.x);
+    float sum           = 0.0f;
+
+    for (int i = 0; i < _image_width; i++) {
+                texutre_pixel.x      = i;
+        int     structured_buffer_id = texture_pixel_to_structured_buffer_ID(id.xy);
+        float3  f3_01                = _per_pixel_fitness[structured_buffer_id].xyz;
+                sum                 += length(f3_01);
+    }
+    sum = sum / _image_width;                                                                            // Normalizing per row already. If we want a different distrubtuion (log fitness) or have problems with floating points error, we might want to normalize else where
+    rows_sums_array[id.x] = sum;
+}
+
+// ----------------------------------------------------------------------------------------------------
+
+[numthreads(1, 1, 1)]                                                                                    //  only one thread is enough to sum all the columns                                                                   
+void CS_Sum_Column(uint3 id : SV_DispatchThreadID)
+{
+    float sum = 0.0f;
+    for (int i = 0; i < _image_height; i++) {
+        sum += rows_sums_array[i];
+    }
+
+    sum = sum / _image_height;                                                                           // normalizing on the column sum. Together with the normalizsation above, this makes the avarege on the screen. 
+    
+    population_fitness_array[_population_id_handel] = sum;
+
+}
+
+
+
+
 

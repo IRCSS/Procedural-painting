@@ -46,6 +46,10 @@ public class EvolutionManager : MonoBehaviour
         main_cam.clearFlags      = CameraClearFlags.Color;
         main_cam.backgroundColor = Color.black;
 
+        Screen.fullScreenMode = FullScreenMode.Windowed;
+
+        Screen.SetResolution(ImageToReproduce.width, ImageToReproduce.height, false);
+        
         rendering_material = new Material(Shader.Find("Unlit/PopulationShader"));
         if (!rendering_material) Debug.LogError("Couldnt find the population shader");
 
@@ -62,6 +66,7 @@ public class EvolutionManager : MonoBehaviour
         per_pixel_fitness_target = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height,
             0, RenderTextureFormat.ARGB32);
         per_pixel_fitness_target.enableRandomWrite = true;
+        per_pixel_fitness_target.Create();
         
 
         population_genes     = new ComputeBuffer[populationPoolNumber]; 
@@ -96,23 +101,25 @@ public class EvolutionManager : MonoBehaviour
 
             // thread groups are made up 32 in 32 threads. The image should be a multiply of 32. 
             // so ideally padded to a power of 2. For other image dimensions, the threadnums
-            // should be changed in the compute shader for the kernels. 
+            // should be changed in the compute shader for the kernels as well as here the 
+            // height or width divided by 32. Change it only if you know what you are doing 
 
 
-            
+
             effect_command_buffer.DispatchCompute(compute_fitness_function, per_pixel_fitness_kernel_handel,
                 ImageToReproduce.width / 32, ImageToReproduce.height / 32, 1);
 
-            effect_command_buffer.Blit(per_pixel_fitness_target, BuiltinRenderTextureType.CameraTarget);
 
         }
 
+            effect_command_buffer.Blit(per_pixel_fitness_target, BuiltinRenderTextureType.CameraTarget);
         
 
         main_cam.AddCommandBuffer(CameraEvent.AfterEverything, effect_command_buffer);
 
 
     }
+
 
     private void OnDestroy()
     {
