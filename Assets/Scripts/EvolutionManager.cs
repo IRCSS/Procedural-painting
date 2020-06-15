@@ -7,28 +7,28 @@ public class EvolutionManager : MonoBehaviour
 {
 
     [Header("Image")]
-    public  Texture                ImageToReproduce;
+    public  Texture                ImageToReproduce;                          // This image is used for the evolution algo and is the ground truth
     public  int                    O_scaleSpaceDepth;
     private RenderTexture[]        O_scales;
             
     [Header("Evelution Settings")]
-    public  int                    populationPoolNumber;
-    public  int                    maximumNumberOfBrushStrokes;  
-    public  Texture                brushTexture;  
+    public  int                    populationPoolNumber;                      // larger population pool could lead to reducing number of generations required to get to the answer however increases the memory overhead
+    public  int                    maximumNumberOfBrushStrokes;               // this controls how many brush strokes can be used to replicate the image aka how many genes a population has
+    public  Texture                brushTexture;                              // four textures in one texture. R, G, B and A each hold a texture of its own
 
     [Header("Soft References")]
-    public  ComputeShader          compute_fitness_function;
+    public  ComputeShader          compute_fitness_function;                  // holds all code for the fitness function of the genetic evolution algo
 
 
-    private ComputeBuffer[]        population_genes;
-    private PopulationMember[]     populations;
-
-    private Material               rendering_material;
+    private ComputeBuffer[]        population_genes;                          // the genes are kept alive on the GPU memory. Each compute buffer, holds a structured buffer which represents a population member
+    private ComputeBuffer          per_pixel_fitnes_buffer;                   // holds the per pixel info on how close a pixel is to the solution
+    private PopulationMember[]     populations;                               // The cpu container which holds info about population
+    private Material               rendering_material;                        // material used to actually render the brush strokes
                                    
                                    
-    private CommandBuffer          effect_command_buffer;
-    private RenderTexture          active_texture_target;
-    private RenderTexture          per_pixel_fitness_target;
+    private CommandBuffer          effect_command_buffer;                     // this command buffer encapsulates everything that happens in the effect
+    private RenderTexture          active_texture_target;                     // the population is renedred in this render texture, it is compared per pixel for fitness in compute later
+    private RenderTexture          debug_texture;                             // texture used to visualize the compute calclulations
 
     private Camera                 main_cam;
 
@@ -63,24 +63,26 @@ public class EvolutionManager : MonoBehaviour
 
         active_texture_target    = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height, 
             0, RenderTextureFormat.ARGB32);
-        per_pixel_fitness_target = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height,
+        debug_texture = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height,
             0, RenderTextureFormat.ARGB32);
-        per_pixel_fitness_target.enableRandomWrite = true;
-        per_pixel_fitness_target.Create();
+        debug_texture.enableRandomWrite = true;
+        debug_texture.Create();
         
 
-        population_genes     = new ComputeBuffer[populationPoolNumber]; 
-        Genes[] initial_gene = new Genes[maximumNumberOfBrushStrokes];
-        populations          = new PopulationMember[populationPoolNumber];
+        population_genes         = new ComputeBuffer[populationPoolNumber]; 
+        Genes[] initial_gene     = new Genes[maximumNumberOfBrushStrokes];
+        populations              = new PopulationMember[populationPoolNumber];
+        per_pixel_fitnes_buffer  = new ComputeBuffer(active_texture_target.width * active_texture_target.height, sizeof(float) * 4);
 
         int per_pixel_fitness_kernel_handel = compute_fitness_function.FindKernel("CS_Fitness_Per_Pixel");
 
         effect_command_buffer.SetRenderTarget(active_texture_target);
-        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
-        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged",            active_texture_target);
-        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_per_pixel_fitness", per_pixel_fitness_target);
-        compute_fitness_function.SetInt    ("_image_width",       ImageToReproduce.width);
-        compute_fitness_function.SetInt    ("_image_height",      ImageToReproduce.height);
+        effect_command_buffer.SetGlobalBuffer("_per_pixel_fitness_buffer", per_pixel_fitnes_buffer);
+        compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
+        compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            active_texture_target);
+        compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
+        compute_fitness_function.SetInt      ("_image_width",       ImageToReproduce.width);
+        compute_fitness_function.SetInt      ("_image_height",      ImageToReproduce.height);
 
         Debug.Log(string.Format("Dispatch dimensions for compute shaders will be: {0}, {1} thread groups and 32 in 32 threads in each group. " +
             "Image should be a multiple of 32 in dimesions", ImageToReproduce.width / 32, ImageToReproduce.height / 32));
@@ -112,7 +114,7 @@ public class EvolutionManager : MonoBehaviour
 
         }
 
-            effect_command_buffer.Blit(per_pixel_fitness_target, BuiltinRenderTextureType.CameraTarget);
+            effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);
         
 
         main_cam.AddCommandBuffer(CameraEvent.AfterEverything, effect_command_buffer);
