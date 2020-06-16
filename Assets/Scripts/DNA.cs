@@ -15,5 +15,5 @@ public struct Genes
 
 public struct PopulationMember
 {
-    int population_Handel;
+   public int population_Handel;
 }
