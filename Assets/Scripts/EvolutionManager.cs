@@ -30,6 +30,7 @@ public class EvolutionManager : MonoBehaviour
                                    
     private CommandBuffer          effect_command_buffer;                     // this command buffer encapsulates everything that happens in the effect
     private RenderTexture          active_texture_target;                     // the population is renedred in this render texture, it is compared per pixel for fitness in compute later
+    private RenderTexture          compute_forged_in_render_texture;
     private RenderTexture          debug_texture;                             // texture used to visualize the compute calclulations
 
     private Camera                 main_cam;
@@ -42,15 +43,26 @@ public class EvolutionManager : MonoBehaviour
 
     void Start()
     {
+        active_texture_target    = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height, 
+            0, RenderTextureFormat.ARGB32);
+        active_texture_target.Create();
+        compute_forged_in_render_texture = new RenderTexture(active_texture_target);
+        compute_forged_in_render_texture.Create();
+
+        debug_texture = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height,
+            0, RenderTextureFormat.ARGB32);
+        debug_texture.enableRandomWrite = true;
+        debug_texture.Create();
 
         main_cam = Camera.main;
-        if (!main_cam) Debug.LogError("Main Camera not found, add a camera to the scene and add the main camera tag to it");
+        if (!main_cam) Debug.LogError("Main Camera not found, add a camera to " +
+            "the scene and add the main camera tag to it");
 
         main_cam.orthographic    = true;
         main_cam.aspect          = (float)ImageToReproduce.width/ (float)ImageToReproduce.height;  
         main_cam.clearFlags      = CameraClearFlags.Color;
         main_cam.backgroundColor = Color.black;
-
+        main_cam.targetTexture = active_texture_target;
         Screen.fullScreenMode = FullScreenMode.Windowed;
 
         Screen.SetResolution(ImageToReproduce.width, ImageToReproduce.height, false);
@@ -66,12 +78,6 @@ public class EvolutionManager : MonoBehaviour
             name = "Effect_Command_Buffer",
         };
 
-        active_texture_target    = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height, 
-            0, RenderTextureFormat.ARGB32);
-        debug_texture = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height,
-            0, RenderTextureFormat.ARGB32);
-        debug_texture.enableRandomWrite = true;
-        debug_texture.Create();
         
 
         population_genes                   = new ComputeBuffer[populationPoolNumber]; 
@@ -87,12 +93,12 @@ public class EvolutionManager : MonoBehaviour
         sun_rows_kernel_handel             = compute_fitness_function.FindKernel("CS_Sum_Rows");
         sun_column_kernel_handel           = compute_fitness_function.FindKernel("CS_Sum_Column");
 
-        effect_command_buffer.SetRenderTarget(active_texture_target);
+        //effect_command_buffer.SetRenderTarget(active_texture_target);
         effect_command_buffer.SetGlobalBuffer("_per_pixel_fitness_buffer",  per_pixel_fitnes_buffer);
         effect_command_buffer.SetGlobalBuffer("_rows_sums_array",           per_row_sum_buffer);
         effect_command_buffer.SetGlobalBuffer("_population_fitness_array",  population_pool_fitness_buffer);
         compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
-        compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            active_texture_target);
+        compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            compute_forged_in_render_texture);
         compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
         compute_fitness_function.SetInt      ("_image_width",      ImageToReproduce.width);
         compute_fitness_function.SetInt      ("_image_height",     ImageToReproduce.height);
@@ -108,6 +114,7 @@ public class EvolutionManager : MonoBehaviour
         for(int i = 0; i<populationPoolNumber; i++){
             population_genes[i] = new ComputeBuffer(maximumNumberOfBrushStrokes, sizeof(float) * 8 + sizeof(int) * 1);
             CPUSystems.InitatePopulationMember(ref initial_gene);
+            print(population_member_to_string(initial_gene));
             population_genes[i].SetData(initial_gene);
 
             populations[i] = new PopulationMember()
@@ -115,11 +122,12 @@ public class EvolutionManager : MonoBehaviour
                 population_Handel = i,
             };
 
-            effect_command_buffer.SetGlobalInt("_population_id_handel", i);
             effect_command_buffer.ClearRenderTarget(true, true, Color.black);
             effect_command_buffer.SetGlobalBuffer("Brushes_Buffer", population_genes[i]);
             effect_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0, 
                 MeshTopology.Triangles, maximumNumberOfBrushStrokes * 6);
+            effect_command_buffer.CopyTexture(active_texture_target, compute_forged_in_render_texture);
+            effect_command_buffer.SetGlobalInt("_population_id_handel", i);
 
             // thread groups are made up 32 in 32 threads. The image should be a multiply of 32. 
             // so ideally padded to a power of 2. For other image dimensions, the threadnums
@@ -129,21 +137,33 @@ public class EvolutionManager : MonoBehaviour
                 ImageToReproduce.width / 32, ImageToReproduce.height / 32, 1);
 
             // dispatch one compute per row in groups of 32
-            effect_command_buffer.DispatchCompute(compute_fitness_function, sun_rows_kernel_handel, 
-                ImageToReproduce.height / 32, 1, 1);
+            //effect_command_buffer.DispatchCompute(compute_fitness_function, sun_rows_kernel_handel, 
+            //    ImageToReproduce.height / 32, 1, 1);
 
-            // dispatch a single thread
-            effect_command_buffer.DispatchCompute(compute_fitness_function, sun_column_kernel_handel, 
-                1, 1, 1);
+            //// dispatch a single thread
+            //effect_command_buffer.DispatchCompute(compute_fitness_function, sun_column_kernel_handel, 
+            //    1, 1, 1);
 
 
         }
 
-        effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                 // Used for debuging the output of the per pixel comute calculations
+        //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                 // Used for debuging the output of the per pixel comute calculations
         
 
         main_cam.AddCommandBuffer(CameraEvent.AfterEverything, effect_command_buffer);
 
+
+    }
+
+    private void Update()
+    {
+        //float[] population_fitness_cpu_values = new float[populationPoolNumber];
+        //population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
+
+        //for(int i = 0; i<populationPoolNumber; i++)
+        //{
+        //    print(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
+        //}
 
     }
 
@@ -158,6 +178,17 @@ public class EvolutionManager : MonoBehaviour
         per_pixel_fitnes_buffer.Release();
         per_row_sum_buffer.Release();
         population_pool_fitness_buffer.Release();
+    }
+
+
+    string population_member_to_string(Genes[] arrayToString)
+    {
+        string debugStringOut = "";
+        for(int i =0; i< arrayToString.Length; i++)
+        {
+            debugStringOut += GenesToString(arrayToString[i]);
+        }
+        return debugStringOut;
     }
 
         string GenesToString(Genes g)
