@@ -19,6 +19,8 @@ public class EvolutionManager : MonoBehaviour
     [Header("Soft References")]
     public  ComputeShader          compute_fitness_function;                  // holds all code for the fitness function of the genetic evolution algo
 
+    [Header("Debug")]
+    public Texture                 user_set_forged;                           // I used this to test if my fitness function works. In this texture I can insert a copy of the original which is slightly altered and see what value my fitness function gives me for that image
 
     private ComputeBuffer[]        population_genes;                          // the genes are kept alive on the GPU memory. Each compute buffer, holds a structured buffer which represents a population member
     private ComputeBuffer          per_pixel_fitnes_buffer;                   // holds the per pixel info on how close a pixel is to the solution. Reused for each population member
@@ -85,7 +87,7 @@ public class EvolutionManager : MonoBehaviour
         populations                        = new PopulationMember[populationPoolNumber];
 
         int pixel_count_in_image           = active_texture_target.width * active_texture_target.height;
-        per_pixel_fitnes_buffer            = new ComputeBuffer(pixel_count_in_image,           sizeof(float) * 4);
+        per_pixel_fitnes_buffer            = new ComputeBuffer(pixel_count_in_image,           sizeof(float) * 4); 
         per_row_sum_buffer                 = new ComputeBuffer(active_texture_target.height,   sizeof(float)    );
         population_pool_fitness_buffer     = new ComputeBuffer(populationPoolNumber,           sizeof(float)    );
 
@@ -99,6 +101,7 @@ public class EvolutionManager : MonoBehaviour
         effect_command_buffer.SetGlobalBuffer("_population_fitness_array",  population_pool_fitness_buffer);
         compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
         compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            compute_forged_in_render_texture);
+       // compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                      // Used for debuging porpuses. Passing on a user given forged to test the fitness function
         compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
         compute_fitness_function.SetInt      ("_image_width",      ImageToReproduce.width);
         compute_fitness_function.SetInt      ("_image_height",     ImageToReproduce.height);
@@ -126,7 +129,7 @@ public class EvolutionManager : MonoBehaviour
             effect_command_buffer.SetGlobalBuffer("Brushes_Buffer", population_genes[i]);
             effect_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0, 
                 MeshTopology.Triangles, maximumNumberOfBrushStrokes * 6);
-            effect_command_buffer.CopyTexture(active_texture_target, compute_forged_in_render_texture);
+            effect_command_buffer.CopyTexture(active_texture_target, compute_forged_in_render_texture);                                             
             effect_command_buffer.SetGlobalInt("_population_id_handel", i);
 
             // thread groups are made up 32 in 32 threads. The image should be a multiply of 32. 
@@ -157,13 +160,13 @@ public class EvolutionManager : MonoBehaviour
 
     private void Update()
     {
-        float[] population_fitness_cpu_values = new float[populationPoolNumber];
-        population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
+        //float[] population_fitness_cpu_values = new float[populationPoolNumber];
+        //population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
 
-        for (int i = 0; i < populationPoolNumber; i++)
-        {
-            print(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
-        }
+        //for (int i = 0; i < populationPoolNumber; i++)
+        //{
+        //    print(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
+        //}
 
     }
 
@@ -180,6 +183,16 @@ public class EvolutionManager : MonoBehaviour
         population_pool_fitness_buffer.Release();
     }
 
+
+
+    void texture_to_RenderTexture(Texture toConvert, RenderTexture toBlitTo)
+    {
+        RenderTexture temp_ref = RenderTexture.active;
+        RenderTexture.active   = toBlitTo;
+
+        Graphics.Blit(toConvert, toBlitTo);
+        RenderTexture.active   = temp_ref;
+    }
 
     string population_member_to_string(Genes[] arrayToString)
     {
