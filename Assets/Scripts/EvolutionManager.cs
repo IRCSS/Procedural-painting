@@ -114,7 +114,7 @@ public class EvolutionManager : MonoBehaviour
         for(int i = 0; i<populationPoolNumber; i++){
             population_genes[i] = new ComputeBuffer(maximumNumberOfBrushStrokes, sizeof(float) * 8 + sizeof(int) * 1);
             CPUSystems.InitatePopulationMember(ref initial_gene);
-            print(population_member_to_string(initial_gene));
+
             population_genes[i].SetData(initial_gene);
 
             populations[i] = new PopulationMember()
@@ -137,12 +137,12 @@ public class EvolutionManager : MonoBehaviour
                 ImageToReproduce.width / 32, ImageToReproduce.height / 32, 1);
 
             // dispatch one compute per row in groups of 32
-            //effect_command_buffer.DispatchCompute(compute_fitness_function, sun_rows_kernel_handel, 
-            //    ImageToReproduce.height / 32, 1, 1);
+            effect_command_buffer.DispatchCompute(compute_fitness_function, sun_rows_kernel_handel,
+                ImageToReproduce.height / 32, 1, 1);
 
             //// dispatch a single thread
-            //effect_command_buffer.DispatchCompute(compute_fitness_function, sun_column_kernel_handel, 
-            //    1, 1, 1);
+            effect_command_buffer.DispatchCompute(compute_fitness_function, sun_column_kernel_handel,
+                1, 1, 1);
 
 
         }
@@ -157,13 +157,13 @@ public class EvolutionManager : MonoBehaviour
 
     private void Update()
     {
-        //float[] population_fitness_cpu_values = new float[populationPoolNumber];
-        //population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
+        float[] population_fitness_cpu_values = new float[populationPoolNumber];
+        population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
 
-        //for(int i = 0; i<populationPoolNumber; i++)
-        //{
-        //    print(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
-        //}
+        for (int i = 0; i < populationPoolNumber; i++)
+        {
+            print(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
+        }
 
     }
 

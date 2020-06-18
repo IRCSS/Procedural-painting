@@ -92,7 +92,7 @@ void CS_Sum_Column(uint3 id : SV_DispatchThreadID)
 
     sum = sum / _image_height;                                                                           // normalizing on the column sum. Together with the normalizsation above, this makes the avarege on the screen. 
     
-    _population_fitness_array[_population_id_handel] = sum;
+    _population_fitness_array[_population_id_handel] = 1. - sum;                                         // oneMinus because the sum represents how unfit the pixel is. Distance to the actual color.
 
 }
 
