@@ -1,5 +1,5 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CS_normalize_population_probabilities
+#pragma kernel CS_transform_fitness_to_probability
 #pragma kernel CS_parent_selection
 
 
@@ -13,14 +13,15 @@ int                          _genes_number_per_member;
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_normalize_population_probabilities
 
-RWStructuredBuffer <float>   _population_fitness_array;
-RWStructuredBuffer <uint2>   _second_gen_parent_ids;                                                  // Buffer has as many members as the population pool size. Each member is made up of an x and a y. The two are parents that produce the next generation
+StructuredBuffer <float>     _population_fitness_array;
+RWStructuredBuffer<float>    _population_accumlative_probablities_array;
+RWStructuredBuffer <int2>    _second_gen_parent_ids;                                                  // Buffer has as many members as the population pool size. Each member is made up of an x and a y. The two are parents that produce the next generation
 
 
 // ----------------------------------------------------------------------------------------------------
 
 [numthreads(1,1,1)]                                                                                   // This will run once, a single thread
-void CS_normalize_population_probabilities (uint3 id : SV_DispatchThreadID)
+void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 {
     
     float total_sum    = 0.0;
@@ -28,24 +29,25 @@ void CS_normalize_population_probabilities (uint3 id : SV_DispatchThreadID)
     for (int i = 0; i < _population_pool_size; i++) {
         
         total_sum  += _population_fitness_array[i];
-        _population_fitness_array[i] = total_sum;
+        _population_accumlative_probablities_array[i] = total_sum;                                     // since I am using only one thread, I dont have to worry about writing to the same cacheline I am reading from and false sharing. 
     }
 
     temp = 0.0;
     for (int j = 0; j < _population_pool_size; j++) {
-        temp = _population_fitness_array[j];
-        _population_fitness_array[j] = temp / total_sum;                                           // actual normalization happens here. Now the fitness of each member is converted to a probablity of the member being selection, with regards to how fit the other members are
+        temp = _population_accumlative_probablities_array[j];
+        _population_accumlative_probablities_array[j] = temp / total_sum;                              // actual normalization happens here. Now the fitness of each member is converted to a probablity of the member being selection, with regards to how fit the other members are
     } 
 
 }
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(10,1,1)]                                                                                   // 1 threads per population pool member. Change the thread group size to what works best for you. If your population size is 100 for example you can dispatch 10 thread groups consisting of 10 threads, or a single group consisting of 100
+[numthreads(10,1,1)]                                                                                  // 1 threads per population pool member. Change the thread group size to what works best for you. If your population size is 100 for example you can dispatch 10 thread groups consisting of 10 threads, or a single group consisting of 100
 void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 {
     
-
+    float randomNumber = 0.5;
+    
  
     _second_gen_parent_ids[id.x] = int2(0.0, 0.0);
 }

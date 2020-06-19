@@ -18,6 +18,7 @@ public class EvolutionManager : MonoBehaviour
 
     [Header("Soft References")]
     public  ComputeShader          compute_fitness_function;                  // holds all code for the fitness function of the genetic evolution algo
+    public  ComputeShader          compute_selection_functions;               // this file contains the compute kernels for the adjusting the fitness to accmulative weighted probablities, selecting parents, cross over as well as mutation
 
     [Header("Debug")]
     public Texture                 user_set_forged;                           // I used this to test if my fitness function works. In this texture I can insert a copy of the original which is slightly altered and see what value my fitness function gives me for that image
@@ -26,6 +27,8 @@ public class EvolutionManager : MonoBehaviour
     private ComputeBuffer          per_pixel_fitnes_buffer;                   // holds the per pixel info on how close a pixel is to the solution. Reused for each population member
     private ComputeBuffer          per_row_sum_buffer;                        // This buffer is used to sum up all the pixel in a row. It has one entry per row, aka number of pixels in height. Reused for each population member
     private ComputeBuffer          population_pool_fitness_buffer;            // This array contains the fitness of each of the population pool members. One member per population member
+    private ComputeBuffer          population_accumlative_prob_buffer;        // This buffer contains the result of transforming the fitness values to an wieghted accmulative probabilities form
+    private ComputeBuffer          second_gen_parents_ids_buffer;             // a buffer of pairs of IDs. Each id refers to one of the parents which is used for the cross over algo. Papulated in Computeshader
     private PopulationMember[]     populations;                               // The cpu container which holds info about population
     private Material               rendering_material;                        // material used to actually render the brush strokes
                                    
@@ -40,11 +43,14 @@ public class EvolutionManager : MonoBehaviour
     private int per_pixel_fitness_kernel_handel;                              // Handels used to dispatch compute. This function calculatis fitness on level of pixel by comparing it to orginal
     private int sun_rows_kernel_handel;                                       // Handels used to dispatch compute. Sums up each pixel of a row to a single value. The result is an array of floats
     private int sun_column_kernel_handel;                                     // Handels used to dispatch compute. Sums up the sums of rows that are saved in a single column to one float.
-
+    private int trans_fitness_to_prob_handel;                                 // Handel used to dispatch compute.  this is used to convert the fitness values which are already normalized to an accumaletive weighted probabilities for sampling 
 
 
     void Start()
     {
+
+        // ____________________________________________________________________________________________________
+        // Textures Initialization
         active_texture_target    = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height, 
             0, RenderTextureFormat.ARGB32);
         active_texture_target.Create();
@@ -56,6 +62,8 @@ public class EvolutionManager : MonoBehaviour
         debug_texture.enableRandomWrite = true;
         debug_texture.Create();
 
+        // ____________________________________________________________________________________________________
+        // Camera Initialisation
         main_cam = Camera.main;
         if (!main_cam) Debug.LogError("Main Camera not found, add a camera to " +
             "the scene and add the main camera tag to it");
@@ -68,44 +76,65 @@ public class EvolutionManager : MonoBehaviour
         Screen.fullScreenMode = FullScreenMode.Windowed;
 
         Screen.SetResolution(ImageToReproduce.width, ImageToReproduce.height, false);
-        
+        // ____________________________________________________________________________________________________
+        // Materials
+
         rendering_material = new Material(Shader.Find("Unlit/PopulationShader"));
         if (!rendering_material) Debug.LogError("Couldnt find the population shader");
 
         rendering_material.SetTexture("_MainTex", brushTexture);
 
 
+
+        // ____________________________________________________________________________________________________
+        // CPU Arrays initalization
+        
+        population_genes                   = new ComputeBuffer[populationPoolNumber]; 
+        Genes[] initial_gene               = new Genes[maximumNumberOfBrushStrokes];
+        populations                        = new PopulationMember[populationPoolNumber];
+
+        // ____________________________________________________________________________________________________
+        // Compute buffers Initialization
+        int pixel_count_in_image           = active_texture_target.width * active_texture_target.height;
+        per_pixel_fitnes_buffer            = new ComputeBuffer(pixel_count_in_image,           sizeof(float) * 4); 
+        per_row_sum_buffer                 = new ComputeBuffer(active_texture_target.height,   sizeof(float)    );
+        population_pool_fitness_buffer     = new ComputeBuffer(populationPoolNumber,           sizeof(float)    );
+        population_accumlative_prob_buffer = new ComputeBuffer(populationPoolNumber,           sizeof(float)    );                            // You could combin this and the fitnes buffer together, I am keeping them seprated for the sake of debuging ease
+        second_gen_parents_ids_buffer      = new ComputeBuffer(populationPoolNumber,           sizeof(int)   * 2);
+
+        // ____________________________________________________________________________________________________
+        // Command Buffer initialization
+        per_pixel_fitness_kernel_handel    = compute_fitness_function.FindKernel("CS_Fitness_Per_Pixel");
+        sun_rows_kernel_handel             = compute_fitness_function.FindKernel("CS_Sum_Rows");
+        sun_column_kernel_handel           = compute_fitness_function.FindKernel("CS_Sum_Column");
+        trans_fitness_to_prob_handel       = compute_selection_functions.FindKernel("CS_transform_fitness_to_probability");
+
         effect_command_buffer = new CommandBuffer
         {
             name = "Effect_Command_Buffer",
         };
 
-        
-
-        population_genes                   = new ComputeBuffer[populationPoolNumber]; 
-        Genes[] initial_gene               = new Genes[maximumNumberOfBrushStrokes];
-        populations                        = new PopulationMember[populationPoolNumber];
-
-        int pixel_count_in_image           = active_texture_target.width * active_texture_target.height;
-        per_pixel_fitnes_buffer            = new ComputeBuffer(pixel_count_in_image,           sizeof(float) * 4); 
-        per_row_sum_buffer                 = new ComputeBuffer(active_texture_target.height,   sizeof(float)    );
-        population_pool_fitness_buffer     = new ComputeBuffer(populationPoolNumber,           sizeof(float)    );
-
-        per_pixel_fitness_kernel_handel    = compute_fitness_function.FindKernel("CS_Fitness_Per_Pixel");
-        sun_rows_kernel_handel             = compute_fitness_function.FindKernel("CS_Sum_Rows");
-        sun_column_kernel_handel           = compute_fitness_function.FindKernel("CS_Sum_Column");
-
+        // -----------------------
+        // Command Buffer Bindings
         //effect_command_buffer.SetRenderTarget(active_texture_target);
-        effect_command_buffer.SetGlobalBuffer("_per_pixel_fitness_buffer",  per_pixel_fitnes_buffer);
-        effect_command_buffer.SetGlobalBuffer("_rows_sums_array",           per_row_sum_buffer);
-        effect_command_buffer.SetGlobalBuffer("_population_fitness_array",  population_pool_fitness_buffer);
+        effect_command_buffer.SetGlobalBuffer("_per_pixel_fitness_buffer",                  per_pixel_fitnes_buffer);
+        effect_command_buffer.SetGlobalBuffer("_rows_sums_array",                           per_row_sum_buffer);
+        effect_command_buffer.SetGlobalBuffer("_population_fitness_array",                  population_pool_fitness_buffer);
+        effect_command_buffer.SetGlobalBuffer("_population_accumlative_probablities_array", population_accumlative_prob_buffer);
+        effect_command_buffer.SetGlobalBuffer("_second_gen_parent_ids",                     second_gen_parents_ids_buffer);
+        
+        // -----------------------
+        // Compute Shader Bindings
         compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
         compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            compute_forged_in_render_texture);
        // compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                      // Used for debuging porpuses. Passing on a user given forged to test the fitness function
         compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
         compute_fitness_function.SetInt      ("_image_width",      ImageToReproduce.width);
         compute_fitness_function.SetInt      ("_image_height",     ImageToReproduce.height);
-
+        
+        compute_selection_functions.SetInt   ("_population_pool_size",    populationPoolNumber);
+        compute_selection_functions.SetInt   ("_genes_number_per_member", maximumNumberOfBrushStrokes);
+        
         Debug.Log(string.Format("Dispatch dimensions for compute shaders will be: " +
             "{0}, {1} thread groups and 32 in 32 threads in each group. " +
             "Image should be a multiple of 32 in dimesions", ImageToReproduce.width / 32, ImageToReproduce.height / 32));
@@ -114,7 +143,14 @@ public class EvolutionManager : MonoBehaviour
             Debug.LogError("image is not multiply of 32. Either change the image dimensions or" +
              "The threadnumbers set up in the compute shaders!");
 
-        for(int i = 0; i<populationPoolNumber; i++){
+        // ____________________________________________________________________________________________________
+        // Command Buffer Recording
+
+        for (int i = 0; i<populationPoolNumber; i++){
+
+
+            // -----------------------
+            // Population Pool first gen initializatiopn
             population_genes[i] = new ComputeBuffer(maximumNumberOfBrushStrokes, sizeof(float) * 8 + sizeof(int) * 1);
             CPUSystems.InitatePopulationMember(ref initial_gene);
 
@@ -125,10 +161,15 @@ public class EvolutionManager : MonoBehaviour
                 population_Handel = i,
             };
 
+            // -----------------------
+            // Draw Population Pool Member
             effect_command_buffer.ClearRenderTarget(true, true, Color.black);
             effect_command_buffer.SetGlobalBuffer("Brushes_Buffer", population_genes[i]);
             effect_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0, 
                 MeshTopology.Triangles, maximumNumberOfBrushStrokes * 6);
+
+            // -----------------------
+            //Compute Fitness
             effect_command_buffer.CopyTexture(active_texture_target, compute_forged_in_render_texture);                                             
             effect_command_buffer.SetGlobalInt("_population_id_handel", i);
 
@@ -151,7 +192,14 @@ public class EvolutionManager : MonoBehaviour
         }
 
         //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                 // Used for debuging the output of the per pixel comute calculations
-        
+
+        // -----------------------
+        // Convert Fitness to accumlative weighted probablities
+
+        // Dispatch single thread. 
+        effect_command_buffer.DispatchCompute(compute_selection_functions, trans_fitness_to_prob_handel, 1, 1, 1);
+
+
 
         main_cam.AddCommandBuffer(CameraEvent.AfterEverything, effect_command_buffer);
 
@@ -160,14 +208,9 @@ public class EvolutionManager : MonoBehaviour
 
     private void Update()
     {
-        //float[] population_fitness_cpu_values = new float[populationPoolNumber];
-        //population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
 
-        //for (int i = 0; i < populationPoolNumber; i++)
-        //{
-        //    print(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
-        //}
-
+        debug_population_member_fitness_value();
+        debug_fitness_to_probabilities_transformation();
     }
 
 
@@ -181,9 +224,34 @@ public class EvolutionManager : MonoBehaviour
         per_pixel_fitnes_buffer.Release();
         per_row_sum_buffer.Release();
         population_pool_fitness_buffer.Release();
+        population_accumlative_prob_buffer.Release();
+        second_gen_parents_ids_buffer.Release();
     }
 
 
+    void debug_fitness_to_probabilities_transformation()
+    {
+        float[] accmulative_probabilities = new float[populationPoolNumber];
+        population_accumlative_prob_buffer.GetData(accmulative_probabilities);
+        for (int i = 0; i < populationPoolNumber; i++)
+        {
+            print(string.Format("population {0}, has the accumalative weighted probablity {1}", i, accmulative_probabilities[i]));
+        }
+    }
+
+    /// <summary>
+    /// Pulls the fitness value data from the GPU and prints them out per member
+    /// </summary>
+    void debug_population_member_fitness_value()
+    {
+        float[] population_fitness_cpu_values = new float[populationPoolNumber];
+        population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
+
+        for (int i = 0; i < populationPoolNumber; i++)
+        {
+            print(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
+        }
+    }
 
     void texture_to_RenderTexture(Texture toConvert, RenderTexture toBlitTo)
     {
