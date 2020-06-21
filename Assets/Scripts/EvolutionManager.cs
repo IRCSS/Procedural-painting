@@ -44,7 +44,7 @@ public class EvolutionManager : MonoBehaviour
     private int sun_rows_kernel_handel;                                       // Handels used to dispatch compute. Sums up each pixel of a row to a single value. The result is an array of floats
     private int sun_column_kernel_handel;                                     // Handels used to dispatch compute. Sums up the sums of rows that are saved in a single column to one float.
     private int trans_fitness_to_prob_handel;                                 // Handel used to dispatch compute.  this is used to convert the fitness values which are already normalized to an accumaletive weighted probabilities for sampling 
-
+    private int debug_hash_handel;
 
     void Start()
     {
@@ -108,6 +108,7 @@ public class EvolutionManager : MonoBehaviour
         sun_rows_kernel_handel             = compute_fitness_function.FindKernel("CS_Sum_Rows");
         sun_column_kernel_handel           = compute_fitness_function.FindKernel("CS_Sum_Column");
         trans_fitness_to_prob_handel       = compute_selection_functions.FindKernel("CS_transform_fitness_to_probability");
+        debug_hash_handel                  = compute_selection_functions.FindKernel("CS_debug_wang_hash");
 
         effect_command_buffer = new CommandBuffer
         {
@@ -125,16 +126,19 @@ public class EvolutionManager : MonoBehaviour
         
         // -----------------------
         // Compute Shader Bindings
-        compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
-        compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            compute_forged_in_render_texture);
-       // compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                      // Used for debuging porpuses. Passing on a user given forged to test the fitness function
-        compute_fitness_function.SetTexture  (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
-        compute_fitness_function.SetInt      ("_image_width",      ImageToReproduce.width);
-        compute_fitness_function.SetInt      ("_image_height",     ImageToReproduce.height);
-        
-        compute_selection_functions.SetInt   ("_population_pool_size",    populationPoolNumber);
-        compute_selection_functions.SetInt   ("_genes_number_per_member", maximumNumberOfBrushStrokes);
-        
+        compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
+        compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            compute_forged_in_render_texture);
+       // compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                      // Used for debuging porpuses. Passing on a user given forged to test the fitness function
+        compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
+        compute_fitness_function.SetInt       ("_image_width",      ImageToReproduce.width);
+        compute_fitness_function.SetInt       ("_image_height",     ImageToReproduce.height);
+                                              
+        compute_selection_functions.SetTexture(debug_hash_handel, "_debug_texture", debug_texture);
+        compute_selection_functions.SetInt    ("_population_pool_size",    populationPoolNumber);
+        compute_selection_functions.SetInt    ("_genes_number_per_member", maximumNumberOfBrushStrokes);
+        compute_selection_functions.SetInt    ("_image_width",             ImageToReproduce.width);
+        compute_selection_functions.SetInt    ("_image_height",            ImageToReproduce.height);
+
         Debug.Log(string.Format("Dispatch dimensions for compute shaders will be: " +
             "{0}, {1} thread groups and 32 in 32 threads in each group. " +
             "Image should be a multiple of 32 in dimesions", ImageToReproduce.width / 32, ImageToReproduce.height / 32));
@@ -198,8 +202,10 @@ public class EvolutionManager : MonoBehaviour
 
         // Dispatch single thread. 
         effect_command_buffer.DispatchCompute(compute_selection_functions, trans_fitness_to_prob_handel, 1, 1, 1);
-
-
+        
+        //effect_command_buffer.DispatchCompute(compute_selection_functions, debug_hash_handel,
+        //      ImageToReproduce.width / 8, ImageToReproduce.height / 8, 1);
+        //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                 // used to debug how well the hashing works
 
         main_cam.AddCommandBuffer(CameraEvent.AfterEverything, effect_command_buffer);
 

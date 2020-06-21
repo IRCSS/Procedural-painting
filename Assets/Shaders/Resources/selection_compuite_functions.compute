@@ -1,7 +1,7 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CS_transform_fitness_to_probability
 #pragma kernel CS_parent_selection
-
+#pragma kernel CS_debug_wang_hash
 
 
 
@@ -16,7 +16,30 @@ int                          _genes_number_per_member;
 StructuredBuffer <float>     _population_fitness_array;
 RWStructuredBuffer<float>    _population_accumlative_probablities_array;
 RWStructuredBuffer <int2>    _second_gen_parent_ids;                                                  // Buffer has as many members as the population pool size. Each member is made up of an x and a y. The two are parents that produce the next generation
+RWTexture2D<float4>          _debug_texture;                                                          // this is used to test how well random number generation works
+int                          _image_width;                                                            // global image einformation. Used for debuging
+int                          _image_height;                                                           // global image einformation. Used for debuging
+// ----------------------------------------------------------------------------------------------------
 
+// -------------------- https://www.shadertoy.com/view/WttXWX
+
+uint triple32(uint x)
+{
+    x ^= x >> 17;
+    x *= 0xed5ad4bbU;
+    x ^= x >> 11;
+    x *= 0xac4c1b51U;
+    x ^= x >> 15;
+    x *= 0x31848babU;
+    x ^= x >> 14;
+    return x;
+}
+
+float wang_rnd(uint seed)
+{
+    uint rndint = triple32(seed);
+    return ((float)rndint) / float(0xFFFFFFFF);                                                       // 0xFFFFFFFF is max unsigned integer in hexa decimal
+}
 
 // ----------------------------------------------------------------------------------------------------
 
@@ -47,7 +70,27 @@ void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 {
     
     float randomNumber = 0.5;
-    
+    int i = 0;
+    for (     ; i < _population_pool_size; i++){
+        if(randomNumber <= _population_accumlative_probablities_array[i]) break;
+    }
+
+    randomNumber = 0.5;
+    int j = 0;
+    for (     ; j < _population_pool_size; j++){
+        if(randomNumber <= _population_accumlative_probablities_array[j]) break;
+    }
  
-    _second_gen_parent_ids[id.x] = int2(0.0, 0.0);
+    _second_gen_parent_ids[id.x] = int2(i, j);
+}
+
+[numthreads(8, 8, 1)]                                                                                  // 1 threads per population pool member. Change the thread group size to what works best for you. If your population size is 100 for example you can dispatch 10 thread groups consisting of 10 threads, or a single group consisting of 100
+void CS_debug_wang_hash(uint3 id : SV_DispatchThreadID)
+{
+    float rand = wang_rnd(_image_width * id.y + id.x);
+ 
+    // used to see if the rand is normalized correctly between 0 and 1
+    //if (rand < 0 || rand>1) rand = 1;
+    //else rand = 0;
+    _debug_texture[id.xy] = float4(rand, rand, rand, 1.0);
 }
