@@ -69,13 +69,13 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 {
     
-    float randomNumber = 0.5;
+    float randomNumber = wang_rnd(id.x);
     int i = 0;
     for (     ; i < _population_pool_size; i++){
         if(randomNumber <= _population_accumlative_probablities_array[i]) break;
     }
 
-    randomNumber = 0.5;
+    randomNumber = wang_rnd(id.x + _population_pool_size * 2);
     int j = 0;
     for (     ; j < _population_pool_size; j++){
         if(randomNumber <= _population_accumlative_probablities_array[j]) break;
