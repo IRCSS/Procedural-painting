@@ -23,13 +23,14 @@ public class EvolutionManager : MonoBehaviour
     [Header("Debug")]
     public Texture                 user_set_forged;                           // I used this to test if my fitness function works. In this texture I can insert a copy of the original which is slightly altered and see what value my fitness function gives me for that image
 
-    private ComputeBuffer[]        population_genes;                          // the genes are kept alive on the GPU memory. Each compute buffer, holds a structured buffer which represents a population member
+ 
+    private ComputeBuffer          population_pool_buffer;                    // Where the population memebers live. The length of this list is population number * number of genes (brush strokes) per population. It is an array of genes where the population member are implied through indexing and strides
     private ComputeBuffer          per_pixel_fitnes_buffer;                   // holds the per pixel info on how close a pixel is to the solution. Reused for each population member
     private ComputeBuffer          per_row_sum_buffer;                        // This buffer is used to sum up all the pixel in a row. It has one entry per row, aka number of pixels in height. Reused for each population member
     private ComputeBuffer          population_pool_fitness_buffer;            // This array contains the fitness of each of the population pool members. One member per population member
     private ComputeBuffer          population_accumlative_prob_buffer;        // This buffer contains the result of transforming the fitness values to an wieghted accmulative probabilities form
     private ComputeBuffer          second_gen_parents_ids_buffer;             // a buffer of pairs of IDs. Each id refers to one of the parents which is used for the cross over algo. Papulated in Computeshader
-    private PopulationMember[]     populations;                               // The cpu container which holds info about population
+   
     private Material               rendering_material;                        // material used to actually render the brush strokes
                                    
                                    
@@ -92,13 +93,13 @@ public class EvolutionManager : MonoBehaviour
         // ____________________________________________________________________________________________________
         // CPU Arrays initalization
         
-        population_genes                   = new ComputeBuffer[populationPoolNumber]; 
-        Genes[] initial_gene               = new Genes[maximumNumberOfBrushStrokes];
-        populations                        = new PopulationMember[populationPoolNumber];
 
         // ____________________________________________________________________________________________________
         // Compute buffers Initialization
         int pixel_count_in_image           = active_texture_target.width * active_texture_target.height;
+        int total_number_of_genes          = populationPoolNumber * maximumNumberOfBrushStrokes;                                              // although population_pool is the array of populations, each population memberis implied through the max number of brushes. It is in parsing an array of genes.
+
+        population_pool_buffer             = new ComputeBuffer(total_number_of_genes,          sizeof(float) * 8 + sizeof(int) * 1);          // for the stride size look ath the DNA.cs and defination of Genes. 
         per_pixel_fitnes_buffer            = new ComputeBuffer(pixel_count_in_image,           sizeof(float) * 4); 
         per_row_sum_buffer                 = new ComputeBuffer(active_texture_target.height,   sizeof(float)    );
         population_pool_fitness_buffer     = new ComputeBuffer(populationPoolNumber,           sizeof(float)    );
@@ -150,28 +151,29 @@ public class EvolutionManager : MonoBehaviour
             Debug.LogError("image is not multiply of 32. Either change the image dimensions or" +
              "The threadnumbers set up in the compute shaders!");
 
+        // -----------------------
+        // Population Pool first gen initializatiopn
+
+        Genes[] initialPop = new Genes[total_number_of_genes];
+
+        CPUSystems.InitatePopulationMember(ref initialPop);
+        population_pool_buffer.SetData(initialPop);
+        rendering_material.SetBuffer("_population_pool", population_pool_buffer);
+
         // ____________________________________________________________________________________________________
         // Command Buffer Recording
+
+        int shader_population_member_begining_index = 0;
 
         for (int i = 0; i<populationPoolNumber; i++){
 
 
-            // -----------------------
-            // Population Pool first gen initializatiopn
-            population_genes[i] = new ComputeBuffer(maximumNumberOfBrushStrokes, sizeof(float) * 8 + sizeof(int) * 1);
-            CPUSystems.InitatePopulationMember(ref initial_gene);
-
-            population_genes[i].SetData(initial_gene);
-
-            populations[i] = new PopulationMember()
-            {
-                population_Handel = i,
-            };
+            effect_command_buffer.SetGlobalInt("_memember_begin_stride", shader_population_member_begining_index);
+            shader_population_member_begining_index += maximumNumberOfBrushStrokes;
 
             // -----------------------
             // Draw Population Pool Member
             effect_command_buffer.ClearRenderTarget(true, true, Color.black);
-            effect_command_buffer.SetGlobalBuffer("Brushes_Buffer", population_genes[i]);
             effect_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0, 
                 MeshTopology.Triangles, maximumNumberOfBrushStrokes * 6);
 
@@ -236,10 +238,7 @@ public class EvolutionManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        foreach(ComputeBuffer cb in population_genes)
-        {
-            cb.Release();
-        }
+       
 
         per_pixel_fitnes_buffer.Release();
         per_row_sum_buffer.Release();

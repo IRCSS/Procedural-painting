@@ -2,7 +2,7 @@
 #pragma kernel CS_transform_fitness_to_probability
 #pragma kernel CS_parent_selection
 #pragma kernel CS_debug_wang_hash
-
+#pragma kernel CS_cross_over
 
 
 // ----------------------------------------------------------------------------------------------------
@@ -94,4 +94,17 @@ void CS_debug_wang_hash(uint3 id : SV_DispatchThreadID)
     //if (rand < 0 || rand>1) rand = 1;
     //else rand = 0;
     _debug_texture[id.xy] = float4(rand, rand, rand, 1.0);
+}
+
+
+// ----------------------------------------------------------------------------------------------------
+
+[numthreads(32,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
+void CS_cross_over(uint3 id : SV_DispatchThreadID)
+{
+     
+    int2 parents = _second_gen_parent_ids[id.x];
+
+
+
 }

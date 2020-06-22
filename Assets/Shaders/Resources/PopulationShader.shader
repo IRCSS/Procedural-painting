@@ -38,8 +38,9 @@
                 };  // Struct size 8 *4 bytes + 1  * 4 = 36 bytes
 
 
-            sampler2D _MainTex;
-            StructuredBuffer<Genes> Brushes_Buffer;
+            sampler2D               _MainTex;
+            StructuredBuffer<Genes> _population_pool;
+            uint                    _memember_begin_stride;
 
             v2f vert (uint id : SV_VertexID)
             {
@@ -64,7 +65,7 @@
                 o.uv     = v2_1;
                 
                 vertexCase      = floor(id/6); // Calculating the index fo sampling brushes_buffer. 
-                Genes brushGene = Brushes_Buffer[vertexCase];
+                Genes brushGene = _population_pool[_memember_begin_stride + vertexCase];
                 
                 o.color = brushGene.color;
                 o.id    = brushGene.texture_ID;
