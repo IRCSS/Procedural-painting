@@ -7,25 +7,25 @@
 // ----------------------------------------------------------------------------------------------------
 // Resources for all the Kernels
 RWStructuredBuffer<float4>   _per_pixel_fitness_buffer;                                                  // Holds the fitness of each pixel of the attempt
-
+                                                                                                         
 RWTexture2D<float4>          _debug_texture;                                                             // you can use this to debug out the content of _per_pixel_fitness_buffer
-
+                                                                                                         
 int                          _image_width;                                                               // global image einformation
 int                          _image_height;                                                              // global image einformation
 int                          _population_id_handel;                                                      // The handel of the population which is currently being rendererd
-// ---------------------------------------------------------------------------------------------------
-// Resources for CS_Fitness_Per_Pixel
+// ---------------------------------------------------------------------------------------------------   
+// Resources for CS_Fitness_Per_Pixel                                                                    
 Texture2D<float4>            _original;                                                                  // the original image we want to replicate. The pixels in this image are used to calculated the fitness of each population
 Texture2D<float4>            _forged;                                                                    // What coames out of the render pipline, it is the visualisation of the population which gets compared to the original
 SamplerState                 sampler_original;
 SamplerState                 sampler_forged;
 // ---------------------------------------------------------------------------------------------------
 // Resources for CS_Sum_Rows
-RWStructuredBuffer <float>   _rows_sums_array;                                                            // To take the average fitness of a population, we fist sum up each row to a single value and save in this buffer
+RWStructuredBuffer <float>   _rows_sums_array;                                                           // To take the average fitness of a population, we fist sum up each row to a single value and save in this buffer
 
 // ---------------------------------------------------------------------------------------------------
 // Resources for CS_Sum_Rows
-RWStructuredBuffer <float>   _population_fitness_array;                                                    // this buffer holds one fitness value per population member. The _population_id_handel is used to write to this buffer for each population member
+RWStructuredBuffer <float>   _population_fitness_array;                                                  // this buffer holds one fitness value per population member. The _population_id_handel is used to write to this buffer for each population member
 
 
 // ===================================================================================================
@@ -53,8 +53,8 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
         abs(_original.SampleLevel(sampler_original, texutre_coordinates, 0)                              
         - _forged.SampleLevel(sampler_forged, texutre_coordinates, 0));                                  
 
-   // int2 texture_pixel = structured_buffer_id_to_texture_pixel(structured_buffer_ID);                    // Debug used to figure out what I have written 
-   // _debug_texture[texture_pixel] = _per_pixel_fitness_buffer[structured_buffer_ID];                     // in the structured buffer _per_pixel_fitness. this texture can be blitted to the screen in EvolutionManager.cs for debug porpuses
+   // int2 texture_pixel = structured_buffer_id_to_texture_pixel(structured_buffer_ID);                  // Debug used to figure out what I have written 
+   // _debug_texture[texture_pixel] = _per_pixel_fitness_buffer[structured_buffer_ID];                   // in the structured buffer _per_pixel_fitness. this texture can be blitted to the screen in EvolutionManager.cs for debug porpuses
 }
 
 
@@ -64,34 +64,34 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 
 
 [numthreads(32, 1, 1)]                                                                                   // image dimensions should be a multiplye of 32 or power of 2. 32 threads per group
-void CS_Sum_Rows(uint3 id : SV_DispatchThreadID)
-{
-
-    int2  texutre_pixel = int2( 0, id.x);
-    float sum           = 0.0f;
-
-    for (int i = 0; i < _image_width; i++) {
-                texutre_pixel.x      = i;
-        int     structured_buffer_id = texture_pixel_to_structured_buffer_ID(id.xy);
-        float3  f3_01                = _per_pixel_fitness_buffer[structured_buffer_id].xyz;
-                sum                 += length(f3_01);
-    }
+void CS_Sum_Rows(uint3 id : SV_DispatchThreadID)                                                         
+{                                                                                                        
+                                                                                                         
+    int2  texutre_pixel = int2( 0, id.x);                                                                
+    float sum           = 0.0f;                                                                          
+                                                                                                         
+    for (int i = 0; i < _image_width; i++) {                                                             
+                texutre_pixel.x      = i;                                                                
+        int     structured_buffer_id = texture_pixel_to_structured_buffer_ID(id.xy);                     
+        float3  f3_01                = _per_pixel_fitness_buffer[structured_buffer_id].xyz;              
+                sum                 += length(f3_01);                                                    
+    }                                                                                                    
     sum = sum / _image_width;                                                                            // Normalizing per row already. If we want a different distrubtuion (log fitness) or have problems with floating points error, we might want to normalize else where
-    _rows_sums_array[id.x] = sum;
-}
-
-// ----------------------------------------------------------------------------------------------------
-
+    _rows_sums_array[id.x] = sum;                                                                        
+}                                                                                                        
+                                                                                                         
+// ----------------------------------------------------------------------------------------------------  
+                                                                                                         
 [numthreads(1, 1, 1)]                                                                                    //  only one thread is enough to sum all the columns                                                                   
-void CS_Sum_Column(uint3 id : SV_DispatchThreadID)
-{
-    float sum = 0.0f;
-    for (int i = 0; i < _image_height; i++) {
-        sum += _rows_sums_array[i];
-    }
-
+void CS_Sum_Column(uint3 id : SV_DispatchThreadID)                                                       
+{                                                                                                        
+    float sum = 0.0f;                                                                                    
+    for (int i = 0; i < _image_height; i++) {                                                            
+        sum += _rows_sums_array[i];                                                                      
+    }                                                                                                    
+                                                                                                         
     sum = sum / _image_height;                                                                           // normalizing on the column sum. Together with the normalizsation above, this makes the avarege on the screen. 
-    
+                                                                                                         
     _population_fitness_array[_population_id_handel] = 1. - sum;                                         // oneMinus because the sum represents how unfit the pixel is. Distance to the actual color.
 
 }

@@ -19,7 +19,8 @@ RWStructuredBuffer <int2>    _second_gen_parent_ids;                            
 RWTexture2D<float4>          _debug_texture;                                                          // this is used to test how well random number generation works
 int                          _image_width;                                                            // global image einformation. Used for debuging
 int                          _image_height;                                                           // global image einformation. Used for debuging
-// ----------------------------------------------------------------------------------------------------
+int                          _generation_number;                                                      // this is used to not generate the same random sequence for all generations.
+                                                                                                      // ----------------------------------------------------------------------------------------------------
 
 // -------------------- https://www.shadertoy.com/view/WttXWX
 
@@ -65,17 +66,17 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(10,1,1)]                                                                                  // 1 threads per population pool member. Change the thread group size to what works best for you. If your population size is 100 for example you can dispatch 10 thread groups consisting of 10 threads, or a single group consisting of 100
+[numthreads(32,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
 void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 {
     
-    float randomNumber = wang_rnd(id.x);
+    float randomNumber = wang_rnd(id.x + triple32(_generation_number));
     int i = 0;
     for (     ; i < _population_pool_size; i++){
         if(randomNumber <= _population_accumlative_probablities_array[i]) break;
     }
 
-    randomNumber = wang_rnd(id.x + _population_pool_size * 2);
+    randomNumber = wang_rnd(id.x + triple32(_generation_number + _population_pool_size));
     int j = 0;
     for (     ; j < _population_pool_size; j++){
         if(randomNumber <= _population_accumlative_probablities_array[j]) break;
@@ -84,7 +85,7 @@ void CS_parent_selection(uint3 id : SV_DispatchThreadID)
     _second_gen_parent_ids[id.x] = int2(i, j);
 }
 
-[numthreads(8, 8, 1)]                                                                                  // 1 threads per population pool member. Change the thread group size to what works best for you. If your population size is 100 for example you can dispatch 10 thread groups consisting of 10 threads, or a single group consisting of 100
+[numthreads(8, 8, 1)]                                                                         
 void CS_debug_wang_hash(uint3 id : SV_DispatchThreadID)
 {
     float rand = wang_rnd(_image_width * id.y + id.x);

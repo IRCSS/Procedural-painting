@@ -44,7 +44,10 @@ public class EvolutionManager : MonoBehaviour
     private int sun_rows_kernel_handel;                                       // Handels used to dispatch compute. Sums up each pixel of a row to a single value. The result is an array of floats
     private int sun_column_kernel_handel;                                     // Handels used to dispatch compute. Sums up the sums of rows that are saved in a single column to one float.
     private int trans_fitness_to_prob_handel;                                 // Handel used to dispatch compute.  this is used to convert the fitness values which are already normalized to an accumaletive weighted probabilities for sampling 
-    private int debug_hash_handel;
+    private int debug_hash_handel;                                            // Used for debuging how well the hash creation function is working
+    private int parent_selection_handel;                                      // used for selecting a pair of parents for each second geneariton of population members  
+
+    private int generation_identifier = 0;                                    // This number specifies how many generations have already gone by. 
 
     void Start()
     {
@@ -109,7 +112,7 @@ public class EvolutionManager : MonoBehaviour
         sun_column_kernel_handel           = compute_fitness_function.FindKernel("CS_Sum_Column");
         trans_fitness_to_prob_handel       = compute_selection_functions.FindKernel("CS_transform_fitness_to_probability");
         debug_hash_handel                  = compute_selection_functions.FindKernel("CS_debug_wang_hash");
-
+        parent_selection_handel            = compute_selection_functions.FindKernel("CS_parent_selection");
         effect_command_buffer = new CommandBuffer
         {
             name = "Effect_Command_Buffer",
@@ -128,7 +131,7 @@ public class EvolutionManager : MonoBehaviour
         // Compute Shader Bindings
         compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
         compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            compute_forged_in_render_texture);
-       // compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                      // Used for debuging porpuses. Passing on a user given forged to test the fitness function
+       // compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                     // Used for debuging porpuses. Passing on a user given forged to test the fitness function
         compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
         compute_fitness_function.SetInt       ("_image_width",      ImageToReproduce.width);
         compute_fitness_function.SetInt       ("_image_height",     ImageToReproduce.height);
@@ -195,17 +198,23 @@ public class EvolutionManager : MonoBehaviour
 
         }
 
-        //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                 // Used for debuging the output of the per pixel comute calculations
+        //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                   // Used for debuging the output of the per pixel comute calculations
 
         // -----------------------
         // Convert Fitness to accumlative weighted probablities
 
         // Dispatch single thread. 
         effect_command_buffer.DispatchCompute(compute_selection_functions, trans_fitness_to_prob_handel, 1, 1, 1);
-        
+
         //effect_command_buffer.DispatchCompute(compute_selection_functions, debug_hash_handel,
         //      ImageToReproduce.width / 8, ImageToReproduce.height / 8, 1);
-        //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                 // used to debug how well the hashing works
+        //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                   // used to debug how well the hashing works
+
+        if (populationPoolNumber % 32 != 0 )
+            Debug.LogError("The population pool number is set to" + populationPoolNumber +
+             "Which is not multiple of 32. Either change this number or numThreads in the compute shader!");
+
+        effect_command_buffer.DispatchCompute(compute_selection_functions, parent_selection_handel, populationPoolNumber / 32, 1, 1);
 
         main_cam.AddCommandBuffer(CameraEvent.AfterEverything, effect_command_buffer);
 
@@ -215,8 +224,13 @@ public class EvolutionManager : MonoBehaviour
     private void Update()
     {
 
-        debug_population_member_fitness_value();
-        debug_fitness_to_probabilities_transformation();
+        generation_identifier++;
+        compute_selection_functions.SetInt("_generation_number", generation_identifier);                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
+
+
+        // debug_population_member_fitness_value();
+        // debug_fitness_to_probabilities_transformation();
+        // debug_parent_selection();
     }
 
 
@@ -232,6 +246,23 @@ public class EvolutionManager : MonoBehaviour
         population_pool_fitness_buffer.Release();
         population_accumlative_prob_buffer.Release();
         second_gen_parents_ids_buffer.Release();
+    }
+
+
+    struct parentPair
+    {
+        public int parentX, parentY;
+    }
+
+    void debug_parent_selection()
+    {
+        parentPair[] second_gen_parents_ids = new parentPair[populationPoolNumber];
+        second_gen_parents_ids_buffer.GetData(second_gen_parents_ids);
+        for (int i = 0; i < populationPoolNumber; i++)
+        {
+            print(string.Format("second generation {0}, has the parents {1} and {2}", 
+                i, second_gen_parents_ids[i].parentX, second_gen_parents_ids[i].parentY));
+        }
     }
 
 
