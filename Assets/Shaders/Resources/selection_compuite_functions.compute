@@ -5,23 +5,44 @@
 #pragma kernel CS_cross_over
 
 
+struct Genes
+{
+    float2 position;       // screen space 0-1
+    float  z_Rotation;     // 0 to tau
+    float2 scale;          // scale in quad aligned space, will be clamped
+    float3 color;          // the colors of each stroke
+    int    texture_ID;     // such a waste of bit space. I only need 2 bits, but paying the cost 8 + padding
+};  // Struct size 8 *4 bytes + 1  * 4 = 36 bytes
+
 // ----------------------------------------------------------------------------------------------------
 // REsource for all kernels
 
-int                          _population_pool_size;
-int                          _genes_number_per_member;
+uint                         _population_pool_size;
+uint                         _genes_number_per_member;
+RWStructuredBuffer<float>    _population_accumlative_probablities_array;
+RWStructuredBuffer<uint2>    _second_gen_parent_ids;                                                  // Buffer has as many members as the population pool size. Each member is made up of an x and a y. The two are parents that produce the next generation
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_normalize_population_probabilities
 
 StructuredBuffer <float>     _population_fitness_array;
-RWStructuredBuffer<float>    _population_accumlative_probablities_array;
-RWStructuredBuffer <int2>    _second_gen_parent_ids;                                                  // Buffer has as many members as the population pool size. Each member is made up of an x and a y. The two are parents that produce the next generation
+RWStructuredBuffer<uint>     _fittest_member;                                                         // this structured buffer only has one member. It is a single int. I am sure there is a way to do this with a groupshared global int, and still read it on the CPU, however since I have to figure out how to do that within unity API I will just use a tiny structured buffer with one member
+// ----------------------------------------------------------------------------------------------------
+// Resource for CS_wang_hash
+
 RWTexture2D<float4>          _debug_texture;                                                          // this is used to test how well random number generation works
 int                          _image_width;                                                            // global image einformation. Used for debuging
 int                          _image_height;                                                           // global image einformation. Used for debuging
-int                          _generation_number;                                                      // this is used to not generate the same random sequence for all generations.
-                                                                                                      // ----------------------------------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------------------------------
+// Resource for CS_parent_selection
+int                          _generation_number;                                                      // this is used to not generate the same random sequence for all generations.
+
+// ----------------------------------------------------------------------------------------------------
+// Resource for CS_cross_over
+RWStructuredBuffer<Genes>    _second_gen_population_pool;
+RWStructuredBuffer<Genes>    _population_pool;
+
+// ----------------------------------------------------------------------------------------------------
 // -------------------- https://www.shadertoy.com/view/WttXWX
 
 uint triple32(uint x)
@@ -50,17 +71,29 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
     
     float total_sum    = 0.0;
     float temp         = 0.0;
-    for (int i = 0; i < _population_pool_size; i++) {
-        
+    
+    float highest_fitness  = 0.0f;
+    uint  m_fittest_member = 20000;
+    for (uint i = 0; i < _population_pool_size; i++) {
+
+        if(_population_fitness_array[i]> highest_fitness)                                              // this finds out which member has the highest fitness. This is used for visualisation at the end of the render loop, the fittest member is redrawn-
+        {
+            highest_fitness  = _population_fitness_array[i];
+            m_fittest_member = i;
+        }
+
         total_sum  += _population_fitness_array[i];
         _population_accumlative_probablities_array[i] = total_sum;                                     // since I am using only one thread, I dont have to worry about writing to the same cacheline I am reading from and false sharing. 
     }
 
+    _fittest_member[0] = m_fittest_member;
+
     temp = 0.0;
-    for (int j = 0; j < _population_pool_size; j++) {
+    for (uint j = 0; j < _population_pool_size; j++) {
         temp = _population_accumlative_probablities_array[j];
         _population_accumlative_probablities_array[j] = temp / total_sum;                              // actual normalization happens here. Now the fitness of each member is converted to a probablity of the member being selection, with regards to how fit the other members are
     } 
+
 
 }
 
@@ -71,18 +104,18 @@ void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 {
     
     float randomNumber = wang_rnd(id.x + triple32(_generation_number));
-    int i = 0;
+    uint i = 0;
     for (     ; i < _population_pool_size; i++){
         if(randomNumber <= _population_accumlative_probablities_array[i]) break;
     }
 
     randomNumber = wang_rnd(id.x + triple32(_generation_number + _population_pool_size));
-    int j = 0;
+    uint j = 0;
     for (     ; j < _population_pool_size; j++){
         if(randomNumber <= _population_accumlative_probablities_array[j]) break;
     }
  
-    _second_gen_parent_ids[id.x] = int2(i, j);
+    _second_gen_parent_ids[id.x] = uint2(i, j);
 }
 
 [numthreads(8, 8, 1)]                                                                         
@@ -99,12 +132,19 @@ void CS_debug_wang_hash(uint3 id : SV_DispatchThreadID)
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(32,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
+[numthreads(64,1,1)]                                                                                  // 1 threads per gene member. change to whatever works for you
 void CS_cross_over(uint3 id : SV_DispatchThreadID)
 {
-     
-    int2 parents = _second_gen_parent_ids[id.x];
+    
+    uint  population_id      = floor(id.x / _genes_number_per_member);                                // Since this is a thread per gene, if there are 5 population members with 10 genes each there will be 50 threads. This number indicates which of those for example 5 population member this thread belongs to
+    uint  popluation_gene_id = fmod (id.x,  _genes_number_per_member);                                // If the above number is for example is 4, then this thread is dealing with one of the genes of the 4th member. This number indicates which of those 10 genes of the 4 member for example it is. In this example, number 12 would be dealing with the 2 gene of the 3 member if you start counting from one (array count from zero)
 
+    uint2 parents            = _second_gen_parent_ids[population_id];                                 // Look at the _second_gen_parent_ids declerantion for more info on what those two values are
 
+    uint  parentToTakeFrom   = parents.y;
 
+    if (popluation_gene_id < _genes_number_per_member / 2) parentToTakeFrom = parents.x;              // very simple cross over algo. take the first half of the genes from one parent and the second half from the other. 
+
+    _second_gen_population_pool[id.x] =                                                               // Each thread is mapped to a gene of the second generation, so we can easily use id.x to write that gene
+        _population_pool[parentToTakeFrom * _genes_number_per_member + popluation_gene_id];           // example: If we want to take 5th gene of the parent.x which is for example population member 3, we would have to first jump to where population 3 starts which is 3 members that consist of ex. 10 genes so we start at 30 and add the 5 which is the gene we want to coppy 
 }
