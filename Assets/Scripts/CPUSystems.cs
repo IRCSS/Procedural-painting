@@ -4,7 +4,7 @@ using UnityEngine;
 
 static class CPUSystems{
 
-
+    // Change the values here to change range of brush stroke properties that can pop up as initial value. To change the mutation variables, you should look in to the Selection_compute_functions.compute
     public static void InitatePopulationMember(ref Genes[] toPopulate)
     {
         for(int i = 0; i<toPopulate.Length; i++)
