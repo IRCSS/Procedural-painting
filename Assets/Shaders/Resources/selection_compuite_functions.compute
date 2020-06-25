@@ -8,14 +8,15 @@
 
 #define Tau       6.283185307
 #define scale_low 0.1
-#define scale_up  1.5
+#define scale_up  3.0
 
 // The below macro is used to get a random number which varies across different generations. The divided by 4 is there to avoid an integer overflow 
 // If the seed gets bigger than half of max uint (0xFFFFFFFF) then it would be an issue. This means the total number of threads across all groups 
 // in a dispatch shouldnt get bigger than 2,147,483,647 threads. Max thread size in each direction is 65, 535 so just have to make sure all dimensions dont 
 // exceed the stated number.
 
-#define rnd(seed, gen, constant)  wang_rnd(seed + fmod(triple32(_generation_number + 51),2)) 
+//+ fmod(triple32(_generation_number + 51),0xFFFFFFFF/2)
+#define rnd(seed, gen, constant)  wang_rnd(seed +_generation_number  * constant ) 
 
 struct Genes
 {
@@ -171,7 +172,7 @@ void CS_debug_wang_hash(uint3 id : SV_DispatchThreadID)
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(64,1,1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+[numthreads(128,1,1)]                                                                                  // 1 threads per gene member. change to whatever works for you
 void CS_cross_over(uint3 id : SV_DispatchThreadID)
 {
     
@@ -189,14 +190,14 @@ void CS_cross_over(uint3 id : SV_DispatchThreadID)
 }
 
 
-[numthreads(64,1,1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+[numthreads(128,1,1)]                                                                                  // 1 threads per gene member. change to whatever works for you
 void CS_mutation_and_copy(uint3 id : SV_DispatchThreadID)
 {
     float rand = rnd(id.x, _generation_number, 45);
 
     
 
-    [branch] if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene(id.x);
+    if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene(id.x);
     else _population_pool[id.x] = _second_gen_population_pool[id.x];
 
 }

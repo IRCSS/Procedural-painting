@@ -15,7 +15,7 @@ public class EvolutionManager : MonoBehaviour
     public  int                    populationPoolNumber;                      // larger population pool could lead to reducing number of generations required to get to the answer however increases the memory overhead
     public  int                    maximumNumberOfBrushStrokes;               // this controls how many brush strokes can be used to replicate the image aka how many genes a population has
     public  Texture                brushTexture;                              // four textures in one texture. R, G, B and A each hold a texture of its own
-
+    public  float                  mutationChance = 0.01f;
     [Header("Soft References")]
     public  ComputeShader          compute_fitness_function;                  // holds all code for the fitness function of the genetic evolution algo
     public  ComputeShader          compute_selection_functions;               // this file contains the compute kernels for the adjusting the fitness to accmulative weighted probablities, selecting parents, cross over as well as mutation
@@ -48,6 +48,8 @@ public class EvolutionManager : MonoBehaviour
     private int trans_fitness_to_prob_handel;                                 // Handel used to dispatch compute.  this is used to convert the fitness values which are already normalized to an accumaletive weighted probabilities for sampling 
     private int debug_hash_handel;                                            // Used for debuging how well the hash creation function is working
     private int parent_selection_handel;                                      // used for selecting a pair of parents for each second geneariton of population members  
+    private int cross_over_handel;                                            // This compute shader breeds the second generation based on the parents and creates a second generation per population pool
+    private int mutation_and_copy_handel;                                     // This copies over the second generation members to the main buffer to be rendered in the next frame and mutates some of the genes along the way
 
     private int generation_identifier = 0;                                    // This number specifies how many generations have already gone by. 
 
@@ -120,6 +122,9 @@ public class EvolutionManager : MonoBehaviour
         trans_fitness_to_prob_handel       = compute_selection_functions.FindKernel("CS_transform_fitness_to_probability");
         debug_hash_handel                  = compute_selection_functions.FindKernel("CS_debug_wang_hash");
         parent_selection_handel            = compute_selection_functions.FindKernel("CS_parent_selection");
+        cross_over_handel                  = compute_selection_functions.FindKernel("CS_cross_over");
+        mutation_and_copy_handel           = compute_selection_functions.FindKernel("CS_mutation_and_copy");
+
         effect_command_buffer = new CommandBuffer
         {
             name = "Effect_Command_Buffer",
@@ -184,7 +189,7 @@ public class EvolutionManager : MonoBehaviour
 
             // -----------------------
             // Draw Population Pool Member
-            effect_command_buffer.ClearRenderTarget(true, true, Color.black);
+            effect_command_buffer.ClearRenderTarget(true, true, Color.white);
             effect_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0, 
                 MeshTopology.Triangles, maximumNumberOfBrushStrokes * 6);
 
@@ -222,7 +227,7 @@ public class EvolutionManager : MonoBehaviour
 
         // -----------------------
         // Redraw The Fittest of the Population Members
-        effect_command_buffer.ClearRenderTarget(true, true, Color.black);
+        effect_command_buffer.ClearRenderTarget(true, true, Color.white);
         effect_command_buffer.DrawProcedural(Matrix4x4.identity, fittest_rendering_material, 0,
             MeshTopology.Triangles, maximumNumberOfBrushStrokes * 6);
         effect_command_buffer.Blit(active_texture_target, BuiltinRenderTextureType.CameraTarget);
@@ -231,13 +236,22 @@ public class EvolutionManager : MonoBehaviour
         //      ImageToReproduce.width / 8, ImageToReproduce.height / 8, 1);
         //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                   // used to debug how well the hashing works
 
-        if (populationPoolNumber % 32 != 0 )
+        if (populationPoolNumber % 32 != 0)
             Debug.LogError("The population pool number is set to" + populationPoolNumber +
              "Which is not multiple of 32. Either change this number or numThreads in the compute shader!");
 
         effect_command_buffer.DispatchCompute(compute_selection_functions, parent_selection_handel, populationPoolNumber / 32, 1, 1);
 
 
+        if (total_number_of_genes % 128 != 0)
+            Debug.LogError(string.Format("Total number of genes in the population pool is: {0}, which is not a factor of 128. " +
+                "Either change this number to a factor of 128 or change the numThreads in the compute shader"));
+
+        effect_command_buffer.DispatchCompute(compute_selection_functions, cross_over_handel, total_number_of_genes / 128, 1, 1);             // This stage takes the selected parents and combines their genes 
+
+        effect_command_buffer.SetGlobalFloat("_mutation_rate", mutationChance);
+
+        effect_command_buffer.DispatchCompute(compute_selection_functions, mutation_and_copy_handel, total_number_of_genes / 128, 1, 1);      // This copies the cross overed genes from second gen to the main buffer for rendering in next frame and also mutates some of them
 
         main_cam.AddCommandBuffer(CameraEvent.AfterEverything, effect_command_buffer);
 
@@ -251,9 +265,15 @@ public class EvolutionManager : MonoBehaviour
         compute_selection_functions.SetInt("_generation_number", generation_identifier);                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
 
 
-        debug_population_member_fitness_value();
-        debug_fitness_to_probabilities_transformation();
-        debug_parent_selection();
+        // debug_population_member_fitness_value();
+        // debug_fitness_to_probabilities_transformation();
+        // debug_parent_selection();
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            debug_cross_over();
+        }
+        
     }
 
 
@@ -273,6 +293,14 @@ public class EvolutionManager : MonoBehaviour
     struct parentPair
     {
         public int parentX, parentY;
+    }
+
+    void debug_cross_over()
+    {
+        Genes[] second_gen = new Genes[maximumNumberOfBrushStrokes * populationPoolNumber];
+        second_gen_population_pool_buffer.GetData(second_gen);
+
+        population_member_to_string(second_gen);
     }
 
     void debug_parent_selection()
@@ -324,14 +352,12 @@ public class EvolutionManager : MonoBehaviour
         RenderTexture.active   = temp_ref;
     }
 
-    string population_member_to_string(Genes[] arrayToString)
+     void population_member_to_string(Genes[] arrayToString)
     {
-        string debugStringOut = "";
         for(int i =0; i< arrayToString.Length; i++)
         {
-            debugStringOut += GenesToString(arrayToString[i]);
+            Debug.Log( "gene [" + i+ "] : "+ GenesToString(arrayToString[i]));
         }
-        return debugStringOut;
     }
 
         string GenesToString(Genes g)
