@@ -17,3 +17,9 @@ public struct PopulationMember
 {
    public int population_Handel;
 }
+
+public struct MemberIDFitnessPair
+{
+    public uint memberID;
+    public float memberFitness;
+};

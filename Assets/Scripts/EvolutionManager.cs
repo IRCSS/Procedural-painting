@@ -8,8 +8,6 @@ public class EvolutionManager : MonoBehaviour
 
     [Header("Image")]
     public  Texture                ImageToReproduce;                          // This image is used for the evolution algo and is the ground truth
-    public  int                    O_scaleSpaceDepth;
-    private RenderTexture[]        O_scales;
             
     [Header("Evelution Settings")]
     public  int                    populationPoolNumber;                      // larger population pool could lead to reducing number of generations required to get to the answer however increases the memory overhead
@@ -22,7 +20,7 @@ public class EvolutionManager : MonoBehaviour
 
     [Header("Debug")]
     public Texture                 user_set_forged;                           // I used this to test if my fitness function works. In this texture I can insert a copy of the original which is slightly altered and see what value my fitness function gives me for that image
-
+    public bool                    turn_on_fitness_debug;
  
     private ComputeBuffer          population_pool_buffer;                    // Where the population memebers live. The length of this list is population number * number of genes (brush strokes) per population. It is an array of genes where the population member are implied through indexing and strides
     private ComputeBuffer          second_gen_population_pool_buffer;         // This buffer is used to write the members the second generation into. This is then coppied at the last stage in to the buffer above.
@@ -53,6 +51,10 @@ public class EvolutionManager : MonoBehaviour
 
     private int generation_identifier = 0;                                    // This number specifies how many generations have already gone by. 
 
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // START
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
     void Start()
     {
 
@@ -80,9 +82,9 @@ public class EvolutionManager : MonoBehaviour
         main_cam.clearFlags      = CameraClearFlags.Color;
         main_cam.backgroundColor = Color.gray;
         //main_cam.targetTexture = active_texture_target;
-        Screen.fullScreenMode = FullScreenMode.Windowed;
+        //Screen.fullScreenMode = FullScreenMode.Windowed;
 
-        Screen.SetResolution(ImageToReproduce.width, ImageToReproduce.height, false);
+        //Screen.SetResolution(ImageToReproduce.width, ImageToReproduce.height, false);
         // ____________________________________________________________________________________________________
         // Materials
 
@@ -107,12 +109,12 @@ public class EvolutionManager : MonoBehaviour
 
         population_pool_buffer             = new ComputeBuffer(total_number_of_genes,          sizeof(float) * 8 + sizeof(int) * 1);          // for the stride size look ath the DNA.cs and defination of Genes. 
         second_gen_population_pool_buffer  = new ComputeBuffer(total_number_of_genes,          sizeof(float) * 8 + sizeof(int) * 1);
-        per_pixel_fitnes_buffer            = new ComputeBuffer(pixel_count_in_image,           sizeof(float) * 4); 
-        per_row_sum_buffer                 = new ComputeBuffer(active_texture_target.height,   sizeof(float)    );
+        per_pixel_fitnes_buffer            = new ComputeBuffer(pixel_count_in_image,           sizeof(float)); 
+        per_row_sum_buffer                 = new ComputeBuffer(active_texture_target.height,   sizeof(float)    );                            // This will have one entry per row of the image. So as many as the height value of the render target. Each of these entries will hold the sum of that row
         population_pool_fitness_buffer     = new ComputeBuffer(populationPoolNumber,           sizeof(float)    );
         population_accumlative_prob_buffer = new ComputeBuffer(populationPoolNumber,           sizeof(float)    );                            // You could combin this and the fitnes buffer together, I am keeping them seprated for the sake of debuging ease
         second_gen_parents_ids_buffer      = new ComputeBuffer(populationPoolNumber,           sizeof(int)   * 2);
-        fittest_member_buffer              = new ComputeBuffer(1,                              sizeof(int));
+        fittest_member_buffer              = new ComputeBuffer(1,                              sizeof(float) + sizeof(int));
 
         // ____________________________________________________________________________________________________
         // Command Buffer initialization
@@ -125,6 +127,22 @@ public class EvolutionManager : MonoBehaviour
         cross_over_handel                  = compute_selection_functions.FindKernel("CS_cross_over");
         mutation_and_copy_handel           = compute_selection_functions.FindKernel("CS_mutation_and_copy");
 
+        // -----------------------
+        // Command Buffer Bindings
+        //effect_command_buffer.SetRenderTarget(active_texture_target);
+
+        bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel, parent_selection_handel, cross_over_handel, mutation_and_copy_handel }, "_population_pool", population_pool_buffer);
+
+        rendering_material.SetBuffer("_population_pool",         population_pool_buffer);
+        fittest_rendering_material.SetBuffer("_population_pool", population_pool_buffer);
+
+        bind_buffers_on_compute(compute_selection_functions, new int[] { cross_over_handel, mutation_and_copy_handel },             "_second_gen_population_pool", second_gen_population_pool_buffer);
+        bind_buffers_on_compute(compute_fitness_function,    new int[] { per_pixel_fitness_kernel_handel, sun_rows_kernel_handel }, "_per_pixel_fitness_buffer",   per_pixel_fitnes_buffer);
+        bind_buffers_on_compute(compute_fitness_function,    new int[] { sun_rows_kernel_handel, sun_column_kernel_handel },        "_rows_sums_array",            per_row_sum_buffer);
+        bind_buffers_on_compute(compute_fitness_function,    new int[] { sun_column_kernel_handel },                                "_population_fitness_array",   population_pool_fitness_buffer);
+        bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel },                            "_population_fitness_array",   population_pool_fitness_buffer);
+
+
         effect_command_buffer = new CommandBuffer
         {
             name = "Effect_Command_Buffer",
@@ -132,14 +150,7 @@ public class EvolutionManager : MonoBehaviour
 
         effect_command_buffer.SetRenderTarget(active_texture_target);
 
-        // -----------------------
-        // Command Buffer Bindings
-        //effect_command_buffer.SetRenderTarget(active_texture_target);
-        effect_command_buffer.SetGlobalBuffer("_population_pool",                           population_pool_buffer);
-        effect_command_buffer.SetGlobalBuffer("_second_gen_population_pool",                second_gen_population_pool_buffer);
-        effect_command_buffer.SetGlobalBuffer("_per_pixel_fitness_buffer",                  per_pixel_fitnes_buffer);
-        effect_command_buffer.SetGlobalBuffer("_rows_sums_array",                           per_row_sum_buffer);
-        effect_command_buffer.SetGlobalBuffer("_population_fitness_array",                  population_pool_fitness_buffer);
+        
         effect_command_buffer.SetGlobalBuffer("_population_accumlative_probablities_array", population_accumlative_prob_buffer);
         effect_command_buffer.SetGlobalBuffer("_second_gen_parent_ids",                     second_gen_parents_ids_buffer);
         effect_command_buffer.SetGlobalBuffer("_fittest_member",                            fittest_member_buffer);
@@ -148,7 +159,7 @@ public class EvolutionManager : MonoBehaviour
         // Compute Shader Bindings
         compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
         compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            compute_forged_in_render_texture);
-       // compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                     // Used for debuging porpuses. Passing on a user given forged to test the fitness function
+        if(turn_on_fitness_debug) compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                     // Used for debuging porpuses. Passing on a user given forged to test the fitness function
         compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
         compute_fitness_function.SetInt       ("_image_width",      ImageToReproduce.width);
         compute_fitness_function.SetInt       ("_image_height",     ImageToReproduce.height);
@@ -258,16 +269,29 @@ public class EvolutionManager : MonoBehaviour
 
     }
 
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // UPTADE
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     private void Update()
     {
+
+        UpdateBalancingParameters();
 
         generation_identifier++;
         compute_selection_functions.SetInt("_generation_number", generation_identifier);                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
 
 
+        
         // debug_population_member_fitness_value();
         // debug_fitness_to_probabilities_transformation();
         // debug_parent_selection();
+
+        MemberIDFitnessPair[] fittestMember = new MemberIDFitnessPair[1];
+
+        fittest_member_buffer.GetData(fittestMember);
+
+        Debug.Log(string.Format("CurrentGeneration {0}, current fittest member is: {1} with a fittness value of {2}",
+            generation_identifier, fittestMember[0].memberID, fittestMember[0].memberFitness));
 
         if (Input.GetKeyDown(KeyCode.D))
         {
@@ -276,6 +300,9 @@ public class EvolutionManager : MonoBehaviour
         
     }
 
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // DESTRUCTOR
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     private void OnDestroy()
     {
@@ -288,6 +315,41 @@ public class EvolutionManager : MonoBehaviour
         second_gen_parents_ids_buffer.Release();
         fittest_member_buffer.Release();
     }
+
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // HELPER_FUNCTIONS
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    void UpdateBalancingParameters()
+    {
+        compute_selection_functions.SetFloat("_mutation_rate", mutationChance);
+    }
+
+
+    void bind_buffers_on_compute(ComputeShader computeShader, int[] handels, string identifier, ComputeBuffer data)
+    {
+        for(int i = 0; i< handels.Length; i++)
+        {
+            computeShader.SetBuffer(handels[i], identifier, data);
+        }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // DEBUG
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 
     struct parentPair

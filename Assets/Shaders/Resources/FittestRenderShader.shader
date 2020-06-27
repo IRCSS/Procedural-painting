@@ -27,6 +27,11 @@
                 int    id     : TEXCOORD2;
             };
 
+             struct MemberIDFitnessPair 
+             {
+                 uint  memberID;
+                 float memberFitness;
+             };
 
             struct Genes
             {
@@ -38,10 +43,10 @@
             };  // Struct size 8 *4 bytes + 1  * 4 = 36 bytes
 
 
-            StructuredBuffer<uint>  _fittest_member;          //The fittest member, this is the mmeber that gets drawn at the end. No need to be a structuredbuffer actually since it is just a single int
-            sampler2D               _MainTex;
-            StructuredBuffer<Genes> _population_pool;
-            uint                    _genes_number_per_member;
+            StructuredBuffer<MemberIDFitnessPair>  _fittest_member;     //The fittest member, this is the mmeber that gets drawn at the end. No need to be a structuredbuffer actually since it is just a single int
+            sampler2D                              _MainTex;
+            StructuredBuffer<Genes>                _population_pool;
+            uint                                   _genes_number_per_member;
 
             v2f vert (uint id : SV_VertexID)
             {
@@ -66,7 +71,7 @@
                 o.uv     = v2_1;
                 
                 vertexCase      = floor(id/6); // Calculating the index fo sampling brushes_buffer. 
-                Genes brushGene = _population_pool[_genes_number_per_member * _fittest_member[0] + vertexCase];
+                Genes brushGene = _population_pool[_genes_number_per_member * _fittest_member[0].memberID + vertexCase];
                 
                 o.color = brushGene.color;
                 o.id    = brushGene.texture_ID;

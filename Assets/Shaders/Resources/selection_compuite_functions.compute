@@ -10,13 +10,15 @@
 #define scale_low 0.1
 #define scale_up  3.0
 
-// The below macro is used to get a random number which varies across different generations. The divided by 4 is there to avoid an integer overflow 
-// If the seed gets bigger than half of max uint (0xFFFFFFFF) then it would be an issue. This means the total number of threads across all groups 
-// in a dispatch shouldnt get bigger than 2,147,483,647 threads. Max thread size in each direction is 65, 535 so just have to make sure all dimensions dont 
-// exceed the stated number.
+// The below macro is used to get a random number which varies across different generations. 
 
-//+ fmod(triple32(_generation_number + 51),0xFFFFFFFF/2)
-#define rnd(seed, gen, constant)  wang_rnd(seed +_generation_number  * constant ) 
+#define rnd(seed, gen, constant)  wang_rnd(seed +triple32(_generation_number) * constant) 
+
+struct MemberIDFitnessPair 
+{
+    uint  memberID;
+    float memberFitness;
+};
 
 struct Genes
 {
@@ -42,8 +44,8 @@ int                          _generation_number;                                
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_normalize_population_probabilities
 
-StructuredBuffer <float>     _population_fitness_array;
-RWStructuredBuffer<uint>     _fittest_member;                                                         // this structured buffer only has one member. It is a single int. I am sure there is a way to do this with a groupshared global int, and still read it on the CPU, however since I have to figure out how to do that within unity API I will just use a tiny structured buffer with one member
+StructuredBuffer <float>                   _population_fitness_array;
+RWStructuredBuffer<MemberIDFitnessPair>    _fittest_member;                                           // this structured buffer only has one member. It is a single int. I am sure there is a way to do this with a groupshared global int, and still read it on the CPU, however since I have to figure out how to do that within unity API I will just use a tiny structured buffer with one member
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_wang_hash
 
@@ -126,7 +128,8 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
         _population_accumlative_probablities_array[i] = total_sum;                                     // since I am using only one thread, I dont have to worry about writing to the same cacheline I am reading from and false sharing. 
     }
 
-    _fittest_member[0] = m_fittest_member;
+    _fittest_member[0].memberID      = m_fittest_member;
+    _fittest_member[0].memberFitness = highest_fitness;
 
     temp = 0.0;
     for (uint j = 0; j < _population_pool_size; j++) {

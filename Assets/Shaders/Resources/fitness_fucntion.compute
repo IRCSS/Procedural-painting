@@ -6,7 +6,7 @@
 
 // ----------------------------------------------------------------------------------------------------
 // Resources for all the Kernels
-RWStructuredBuffer<float4>   _per_pixel_fitness_buffer;                                                  // Holds the fitness of each pixel of the attempt
+RWStructuredBuffer<float>    _per_pixel_fitness_buffer;                                                  // Holds the fitness of each pixel of the attempt
                                                                                                          
 RWTexture2D<float4>          _debug_texture;                                                             // you can use this to debug out the content of _per_pixel_fitness_buffer
                                                                                                          
@@ -29,6 +29,19 @@ RWStructuredBuffer <float>   _population_fitness_array;                         
 
 
 // ===================================================================================================
+#define EPSILON  1e-10
+// https://www.shadertoy.com/view/4dKcWK
+float3 RGBtoHCV(in float3 rgb)
+{
+    // RGB [0..1] to Hue-Chroma-Value [0..1]
+    // Based on work by Sam Hocevar and Emil Persson
+    float4 p = (rgb.g < rgb.b) ? float4(rgb.bg, -1., 2. / 3.) : float4(rgb.gb, 0., -1. / 3.);
+    float4 q = (rgb.r < p.x) ? float4(p.xyw, rgb.r) : float4(rgb.r, p.yzx);
+    float c = q.x - min(q.w, q.y);
+    float h = abs((q.w - q.y) / (6. * c + EPSILON) + q.z);
+    return float3(h, c, q.x);
+}
+
 
 inline int texture_pixel_to_structured_buffer_ID(uint2 texture_pixel) {
     return _image_width * texture_pixel.y + texture_pixel.x;
@@ -40,6 +53,7 @@ inline int2 structured_buffer_id_to_texture_pixel(int structured_buffer_id) {
     return int2(x,y);
 }
 
+
 [numthreads(32,32,1)]                                                                                    // image dimensions should be a multiplye of 32 or power of 2. 1024 threads per group
 void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)                                                
 {                                                                                                        
@@ -49,9 +63,15 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 
     int structured_buffer_ID = texture_pixel_to_structured_buffer_ID(id.xy);                             
 
-    _per_pixel_fitness_buffer[structured_buffer_ID] =                                                    
-        abs(_original.SampleLevel(sampler_original, texutre_coordinates, 0)                              
-        - _forged.SampleLevel(sampler_forged, texutre_coordinates, 0));                                  
+    float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0);
+           original_color = RGBtoHCV(original_color);
+
+    float3 forged_color   = _forged.SampleLevel(sampler_forged, texutre_coordinates, 0);
+           forged_color   = RGBtoHCV(forged_color);
+
+    float3 fittness       = abs(original_color - forged_color) ;
+
+    _per_pixel_fitness_buffer[structured_buffer_ID] = fittness.x *0.2 + fittness.y *0.2+ fittness.z*0.4;
 
    // int2 texture_pixel = structured_buffer_id_to_texture_pixel(structured_buffer_ID);                  // Debug used to figure out what I have written 
    // _debug_texture[texture_pixel] = _per_pixel_fitness_buffer[structured_buffer_ID];                   // in the structured buffer _per_pixel_fitness. this texture can be blitted to the screen in EvolutionManager.cs for debug porpuses
@@ -72,9 +92,8 @@ void CS_Sum_Rows(uint3 id : SV_DispatchThreadID)
                                                                                                          
     for (int i = 0; i < _image_width; i++) {                                                             
                 texutre_pixel.x      = i;                                                                
-        int     structured_buffer_id = texture_pixel_to_structured_buffer_ID(id.xy);                     
-        float3  f3_01                = _per_pixel_fitness_buffer[structured_buffer_id].xyz;              
-                sum                 += length(f3_01);                                                    
+        int     structured_buffer_id = texture_pixel_to_structured_buffer_ID(id.xy);                       
+                sum                 += _per_pixel_fitness_buffer[structured_buffer_id];
     }                                                                                                    
     sum = sum / _image_width;                                                                            // Normalizing per row already. If we want a different distrubtuion (log fitness) or have problems with floating points error, we might want to normalize else where
     _rows_sums_array[id.x] = sum;                                                                        
@@ -91,8 +110,9 @@ void CS_Sum_Column(uint3 id : SV_DispatchThreadID)
     }                                                                                                    
                                                                                                          
     sum = sum / _image_height;                                                                           // normalizing on the column sum. Together with the normalizsation above, this makes the avarege on the screen. 
-                                                                                                         
-    _population_fitness_array[_population_id_handel] = 1. - sum;                                         // oneMinus because the sum represents how unfit the pixel is. Distance to the actual color.
+                  
+    sum = 1. - sum;
+    _population_fitness_array[_population_id_handel] = pow(sum,5.);                                      // oneMinus because the sum represents how unfit the pixel is. Distance to the actual color.
 
 }
 
