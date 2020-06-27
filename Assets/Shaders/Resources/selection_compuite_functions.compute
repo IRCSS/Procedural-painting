@@ -12,7 +12,7 @@
 
 // The below macro is used to get a random number which varies across different generations. 
 
-#define rnd(seed, gen, constant)  wang_rnd(seed +triple32(_generation_number) * constant) 
+#define rnd(seed, constant)  wang_rnd(seed +triple32(_generation_seed) * constant) 
 
 struct MemberIDFitnessPair 
 {
@@ -40,7 +40,7 @@ RWStructuredBuffer<uint2>    _second_gen_parent_ids;                            
 RWStructuredBuffer<Genes>    _second_gen_population_pool;
 RWStructuredBuffer<Genes>    _population_pool;
 
-int                          _generation_number;                                                      // this is used to not generate the same random sequence for all generations.
+int                          _generation_seed;                                                        // this is used to not generate the same random sequence for all generations.
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_normalize_population_probabilities
 
@@ -86,20 +86,20 @@ inline Genes mutate_gene(uint seed)
 {
     Genes toReturn;
 
-    toReturn.position   = float2(rnd(seed, _generation_number, 51),                                   // Position X. range -1 -> 1
-                                 rnd(seed, _generation_number, 712))* 2.0 - 1.0;                      // Position Y. range -1 -> 1
-
-    toReturn.z_Rotation = rnd(seed, _generation_number, 25) * Tau;                                    // 0 to 360 degrees or 2 PI for our functions
-
-    toReturn.scale      = float2(rnd(seed, _generation_number, 82),                                   // Scale X.
-                                 rnd(seed, _generation_number, 7)) *                                  // Scale Y.
-                                 (scale_up - scale_low) + scale_low;                                  // Remap to lower and higher bound of the scale range
-
-    toReturn.color      = float3(rnd(seed, _generation_number, 62),                                   // brush strokes color channel. R
-                                 rnd(seed, _generation_number, 13),                                   // brush strokes color channel. G
-                                 rnd(seed, _generation_number, 662));                                 // brush strokes color channel. B  
-
-    toReturn.texture_ID = floor(rnd(seed, _generation_number, 992) * 4);                              // integer id betwen 0 and 3 inclusive 0 and 3. So 4 elements
+    toReturn.position   = float2(rnd(seed, 51),                                                       // Position X. range -1 -> 1
+                                 rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
+                                                                                                      
+    toReturn.z_Rotation = rnd(seed, 25) * Tau;                                                        // 0 to 360 degrees or 2 PI for our functions
+                                                                                                      
+    toReturn.scale      = float2(rnd(seed, 82),                                                       // Scale X.
+                                 rnd(seed, 7)) *                                                      // Scale Y.
+                                 (scale_up - scale_low) + scale_low;                                                      // Remap to lower and higher bound of the scale range
+                                                                                                      
+    toReturn.color      = float3(rnd(seed, 62),                                                       // brush strokes color channel. R
+                                 rnd(seed, 13),                                                       // brush strokes color channel. G
+                                 rnd(seed, 662));                                                     // brush strokes color channel. B  
+                                                                                                      
+    toReturn.texture_ID = floor(rnd(seed, 992) * 4);                                                  // integer id betwen 0 and 3 inclusive 0 and 3. So 4 elements
 
 
     return toReturn;
@@ -142,17 +142,17 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(32,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
+[numthreads(16,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
 void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 {
     
-    float randomNumber = rnd(id.x, _generation_number, 25);
+    float randomNumber = rnd(id.x, 25);
     uint i = 0;
     for (     ; i < _population_pool_size; i++){
         if(randomNumber <= _population_accumlative_probablities_array[i]) break;
     }
 
-    randomNumber = rnd(id.x, _generation_number, 61);
+    randomNumber = rnd(id.x, 61);
     uint j = 0;
     for (     ; j < _population_pool_size; j++){
         if(randomNumber <= _population_accumlative_probablities_array[j]) break;
@@ -164,7 +164,7 @@ void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]                                                                         
 void CS_debug_wang_hash(uint3 id : SV_DispatchThreadID)
 {
-    float rand = rnd(_image_width * id.y + id.x, _generation_number, 13);
+    float rand = rnd(_image_width * id.y + id.x, 13);
  
     // used to see if the rand is normalized correctly between 0 and 1
     //if (rand < 0 || rand>1) rand = 1;
@@ -196,7 +196,7 @@ void CS_cross_over(uint3 id : SV_DispatchThreadID)
 [numthreads(128,1,1)]                                                                                  // 1 threads per gene member. change to whatever works for you
 void CS_mutation_and_copy(uint3 id : SV_DispatchThreadID)
 {
-    float rand = rnd(id.x, _generation_number, 45);
+    float rand = rnd(id.x, 45);
 
     
 

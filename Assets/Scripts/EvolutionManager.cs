@@ -21,7 +21,7 @@ public class EvolutionManager : MonoBehaviour
     [Header("Debug")]
     public Texture                 user_set_forged;                           // I used this to test if my fitness function works. In this texture I can insert a copy of the original which is slightly altered and see what value my fitness function gives me for that image
     public bool                    turn_on_fitness_debug;
- 
+    
     private ComputeBuffer          population_pool_buffer;                    // Where the population memebers live. The length of this list is population number * number of genes (brush strokes) per population. It is an array of genes where the population member are implied through indexing and strides
     private ComputeBuffer          second_gen_population_pool_buffer;         // This buffer is used to write the members the second generation into. This is then coppied at the last stage in to the buffer above.
     private ComputeBuffer          per_pixel_fitnes_buffer;                   // holds the per pixel info on how close a pixel is to the solution. Reused for each population member
@@ -127,56 +127,39 @@ public class EvolutionManager : MonoBehaviour
         cross_over_handel                  = compute_selection_functions.FindKernel("CS_cross_over");
         mutation_and_copy_handel           = compute_selection_functions.FindKernel("CS_mutation_and_copy");
 
+
         // -----------------------
-        // Command Buffer Bindings
-        //effect_command_buffer.SetRenderTarget(active_texture_target);
+        // Compute Shader Bindings
 
         bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel, parent_selection_handel, cross_over_handel, mutation_and_copy_handel }, "_population_pool", population_pool_buffer);
 
         rendering_material.SetBuffer("_population_pool",         population_pool_buffer);
         fittest_rendering_material.SetBuffer("_population_pool", population_pool_buffer);
 
-        bind_buffers_on_compute(compute_selection_functions, new int[] { cross_over_handel, mutation_and_copy_handel },             "_second_gen_population_pool", second_gen_population_pool_buffer);
-        bind_buffers_on_compute(compute_fitness_function,    new int[] { per_pixel_fitness_kernel_handel, sun_rows_kernel_handel }, "_per_pixel_fitness_buffer",   per_pixel_fitnes_buffer);
-        bind_buffers_on_compute(compute_fitness_function,    new int[] { sun_rows_kernel_handel, sun_column_kernel_handel },        "_rows_sums_array",            per_row_sum_buffer);
-        bind_buffers_on_compute(compute_fitness_function,    new int[] { sun_column_kernel_handel },                                "_population_fitness_array",   population_pool_fitness_buffer);
-        bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel },                            "_population_fitness_array",   population_pool_fitness_buffer);
+        bind_buffers_on_compute(compute_selection_functions, new int[] { cross_over_handel, mutation_and_copy_handel },             "_second_gen_population_pool",                second_gen_population_pool_buffer);
+        bind_buffers_on_compute(compute_fitness_function,    new int[] { per_pixel_fitness_kernel_handel, sun_rows_kernel_handel }, "_per_pixel_fitness_buffer",                  per_pixel_fitnes_buffer);
+        bind_buffers_on_compute(compute_fitness_function,    new int[] { sun_rows_kernel_handel, sun_column_kernel_handel },        "_rows_sums_array",                           per_row_sum_buffer);
+        bind_buffers_on_compute(compute_fitness_function,    new int[] { sun_column_kernel_handel },                                "_population_fitness_array",                  population_pool_fitness_buffer);
+        bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel },                            "_population_fitness_array",                  population_pool_fitness_buffer);
+        bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel, parent_selection_handel },   "_population_accumlative_probablities_array", population_accumlative_prob_buffer);
+        bind_buffers_on_compute(compute_selection_functions, new int[] { parent_selection_handel, cross_over_handel},               "_second_gen_parent_ids",                     second_gen_parents_ids_buffer);
+        bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel},                             "_fittest_member",                            fittest_member_buffer);
 
+        fittest_rendering_material.SetBuffer("_fittest_member", fittest_member_buffer);
 
-        effect_command_buffer = new CommandBuffer
-        {
-            name = "Effect_Command_Buffer",
-        };
-
-        effect_command_buffer.SetRenderTarget(active_texture_target);
-
-        
-        effect_command_buffer.SetGlobalBuffer("_population_accumlative_probablities_array", population_accumlative_prob_buffer);
-        effect_command_buffer.SetGlobalBuffer("_second_gen_parent_ids",                     second_gen_parents_ids_buffer);
-        effect_command_buffer.SetGlobalBuffer("_fittest_member",                            fittest_member_buffer);
-        
-        // -----------------------
-        // Compute Shader Bindings
         compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_original",          ImageToReproduce);
         compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            compute_forged_in_render_texture);
         if(turn_on_fitness_debug) compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_forged",            user_set_forged);                     // Used for debuging porpuses. Passing on a user given forged to test the fitness function
-        compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
+        //compute_fitness_function.SetTexture   (per_pixel_fitness_kernel_handel, "_debug_texture",     debug_texture);
+        //compute_selection_functions.SetTexture(debug_hash_handel,               "_debug_texture",     debug_texture);
+
         compute_fitness_function.SetInt       ("_image_width",      ImageToReproduce.width);
         compute_fitness_function.SetInt       ("_image_height",     ImageToReproduce.height);
-                                              
-        compute_selection_functions.SetTexture(debug_hash_handel, "_debug_texture", debug_texture);
+        compute_selection_functions.SetInt    ("_image_width",      ImageToReproduce.width);
+        compute_selection_functions.SetInt    ("_image_height",     ImageToReproduce.height);
+
         compute_selection_functions.SetInt    ("_population_pool_size",    populationPoolNumber);
         compute_selection_functions.SetInt    ("_genes_number_per_member", maximumNumberOfBrushStrokes);
-        compute_selection_functions.SetInt    ("_image_width",             ImageToReproduce.width);
-        compute_selection_functions.SetInt    ("_image_height",            ImageToReproduce.height);
-
-        Debug.Log(string.Format("Dispatch dimensions for compute shaders will be: " +
-            "{0}, {1} thread groups and 32 in 32 threads in each group. " +
-            "Image should be a multiple of 32 in dimesions", ImageToReproduce.width / 32, ImageToReproduce.height / 32));
-
-        if (ImageToReproduce.width % 32 != 0 || ImageToReproduce.height % 32 != 0)
-            Debug.LogError("image is not multiply of 32. Either change the image dimensions or" +
-             "The threadnumbers set up in the compute shaders!");
 
         // -----------------------
         // Population Pool first gen initializatiopn
@@ -187,6 +170,26 @@ public class EvolutionManager : MonoBehaviour
         population_pool_buffer.SetData(initialPop);
         rendering_material.SetBuffer("_population_pool", population_pool_buffer);
 
+        // -----------------------
+        // Command Buffer Bindings
+        //effect_command_buffer.SetRenderTarget(active_texture_target);
+
+        effect_command_buffer = new CommandBuffer
+        {
+            name = "Effect_Command_Buffer",
+        };
+
+        ClearAllRenderTargets(ref effect_command_buffer, true, true, Color.white);
+
+        Debug.Log(string.Format("Dispatch dimensions for compute shaders will be: " +
+            "{0}, {1} thread groups and 32 in 32 threads in each group. " +
+            "Image should be a multiple of 32 in dimesions", ImageToReproduce.width / 32, ImageToReproduce.height / 32));
+
+        if (ImageToReproduce.width % 32 != 0 || ImageToReproduce.height % 32 != 0)
+            Debug.LogError("image is not multiply of 32. Either change the image dimensions or" +
+             "The threadnumbers set up in the compute shaders!");
+
+
         // ____________________________________________________________________________________________________
         // Command Buffer Recording
 
@@ -195,19 +198,19 @@ public class EvolutionManager : MonoBehaviour
         for (int i = 0; i<populationPoolNumber; i++){
 
 
-            effect_command_buffer.SetGlobalInt("_memember_begin_stride", shader_population_member_begining_index);
-            shader_population_member_begining_index += maximumNumberOfBrushStrokes;
+            effect_command_buffer.SetGlobalInt("_memember_begin_stride", shader_population_member_begining_index);                             // This is used in the PopulationShader to sample the currect population member (brush stroke) from the population pool list. It is baisicly population_member_index * genes_number_per_population
+            shader_population_member_begining_index += maximumNumberOfBrushStrokes;                                                            // add the genes number (stride) in every loop iteration instead of caculating  population_member_index * genes_number_per_population every time
 
             // -----------------------
             // Draw Population Pool Member
-            effect_command_buffer.ClearRenderTarget(true, true, Color.white);
+            ClearAllRenderTargets(ref effect_command_buffer, true, true, Color.white);
             effect_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0, 
                 MeshTopology.Triangles, maximumNumberOfBrushStrokes * 6);
 
             // -----------------------
             //Compute Fitness
-            effect_command_buffer.CopyTexture(active_texture_target, compute_forged_in_render_texture);                                             
-            effect_command_buffer.SetGlobalInt("_population_id_handel", i);
+            effect_command_buffer.CopyTexture(active_texture_target, compute_forged_in_render_texture);                                         // Without copying the rendering results to a new buffer, I was getting weird results after the rendering of the first population member. Seemed like unity unbinds this buffer since it thinks another operation is writing to it and binds a compeletly different buffer as input (auto generated one). The problem is gone if you copy the buffer 
+            effect_command_buffer.SetGlobalInt("_population_id_handel", i);                                                                     // the id is used in compute to know which of the populatioin members are currently being dealt with. 
 
             // thread groups are made up 32 in 32 threads. The image should be a multiply of 32. 
             // so ideally padded to a power of 2. For other image dimensions, the threadnums
@@ -233,12 +236,13 @@ public class EvolutionManager : MonoBehaviour
         // Convert Fitness to accumlative weighted probablities
 
         // Dispatch single thread. 
-        effect_command_buffer.DispatchCompute(compute_selection_functions, trans_fitness_to_prob_handel, 1, 1, 1);
+        effect_command_buffer.DispatchCompute(compute_selection_functions, trans_fitness_to_prob_handel, 1, 1, 1);                            // dispatching only a single thread is a waste of a wave front and generally gpu resrources. There  are better reduction algorithmns designed for GPU, have a look at those
 
 
         // -----------------------
         // Redraw The Fittest of the Population Members
-        effect_command_buffer.ClearRenderTarget(true, true, Color.white);
+        ClearAllRenderTargets(ref effect_command_buffer, true, true, Color.white);
+
         effect_command_buffer.DrawProcedural(Matrix4x4.identity, fittest_rendering_material, 0,
             MeshTopology.Triangles, maximumNumberOfBrushStrokes * 6);
         effect_command_buffer.Blit(active_texture_target, BuiltinRenderTextureType.CameraTarget);
@@ -247,11 +251,11 @@ public class EvolutionManager : MonoBehaviour
         //      ImageToReproduce.width / 8, ImageToReproduce.height / 8, 1);
         //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                   // used to debug how well the hashing works
 
-        if (populationPoolNumber % 32 != 0)
+        if (populationPoolNumber % 16 != 0)
             Debug.LogError("The population pool number is set to" + populationPoolNumber +
              "Which is not multiple of 32. Either change this number or numThreads in the compute shader!");
 
-        effect_command_buffer.DispatchCompute(compute_selection_functions, parent_selection_handel, populationPoolNumber / 32, 1, 1);
+        effect_command_buffer.DispatchCompute(compute_selection_functions, parent_selection_handel, populationPoolNumber / 16, 1, 1);
 
 
         if (total_number_of_genes % 128 != 0)
@@ -260,13 +264,11 @@ public class EvolutionManager : MonoBehaviour
 
         effect_command_buffer.DispatchCompute(compute_selection_functions, cross_over_handel, total_number_of_genes / 128, 1, 1);             // This stage takes the selected parents and combines their genes 
 
-        effect_command_buffer.SetGlobalFloat("_mutation_rate", mutationChance);
-
         effect_command_buffer.DispatchCompute(compute_selection_functions, mutation_and_copy_handel, total_number_of_genes / 128, 1, 1);      // This copies the cross overed genes from second gen to the main buffer for rendering in next frame and also mutates some of them
 
         main_cam.AddCommandBuffer(CameraEvent.AfterEverything, effect_command_buffer);
 
-
+        UpdateBalancingParameters();
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -277,10 +279,7 @@ public class EvolutionManager : MonoBehaviour
 
         UpdateBalancingParameters();
 
-        generation_identifier++;
-        compute_selection_functions.SetInt("_generation_number", generation_identifier);                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
-
-
+    
         
         // debug_population_member_fitness_value();
         // debug_fitness_to_probabilities_transformation();
@@ -323,6 +322,11 @@ public class EvolutionManager : MonoBehaviour
 
     void UpdateBalancingParameters()
     {
+
+        generation_identifier++;
+        compute_selection_functions.SetInt("_generation_seed", generation_identifier + Random.Range(0, 2147483647));                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
+
+
         compute_selection_functions.SetFloat("_mutation_rate", mutationChance);
     }
 
@@ -338,7 +342,18 @@ public class EvolutionManager : MonoBehaviour
 
 
 
+    void ClearAllRenderTargets(ref CommandBuffer cb, bool color, bool depth, Color c)
+    {
 
+        //if this is called after a compute. it might cause sync issues with the compute. never understood how the 
+        //the barriers and syncing is done in unity. So keep an eye out
+
+        cb.SetRenderTarget(compute_forged_in_render_texture);         // The texture which is used as input for the compute shader also needs to be cleared
+        cb.ClearRenderTarget(color, depth, c);               
+
+        cb.SetRenderTarget(active_texture_target);                    // make sure you end up with active_texture_target being the last bound render target
+        cb.ClearRenderTarget(color, depth, c);
+    }
 
 
 
@@ -356,6 +371,7 @@ public class EvolutionManager : MonoBehaviour
     {
         public int parentX, parentY;
     }
+
 
     void debug_cross_over()
     {
