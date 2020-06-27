@@ -142,7 +142,7 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(16,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
+[numthreads(32,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
 void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 {
     

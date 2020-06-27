@@ -219,7 +219,7 @@ public class EvolutionManager : MonoBehaviour
             effect_command_buffer.DispatchCompute(compute_fitness_function, per_pixel_fitness_kernel_handel,
                 ImageToReproduce.width / 32, ImageToReproduce.height / 32, 1);
 
-            // dispatch one compute per row in groups of 32
+            // dispatch one compute per row in groups of 64
             effect_command_buffer.DispatchCompute(compute_fitness_function, sun_rows_kernel_handel,
                 ImageToReproduce.height / 32, 1, 1);
 
@@ -251,11 +251,11 @@ public class EvolutionManager : MonoBehaviour
         //      ImageToReproduce.width / 8, ImageToReproduce.height / 8, 1);
         //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                   // used to debug how well the hashing works
 
-        if (populationPoolNumber % 16 != 0)
+        if (populationPoolNumber % 32 != 0)
             Debug.LogError("The population pool number is set to" + populationPoolNumber +
              "Which is not multiple of 32. Either change this number or numThreads in the compute shader!");
 
-        effect_command_buffer.DispatchCompute(compute_selection_functions, parent_selection_handel, populationPoolNumber / 16, 1, 1);
+        effect_command_buffer.DispatchCompute(compute_selection_functions, parent_selection_handel, populationPoolNumber / 32, 1, 1);
 
 
         if (total_number_of_genes % 128 != 0)

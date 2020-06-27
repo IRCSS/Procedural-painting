@@ -43,6 +43,7 @@ float3 RGBtoHCV(in float3 rgb)
 }
 
 
+
 inline int texture_pixel_to_structured_buffer_ID(uint2 texture_pixel) {
     return _image_width * texture_pixel.y + texture_pixel.x;
 }
@@ -61,17 +62,17 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
     float2 texutre_coordinates = float2((float)id.x / (float)_image_width,                               
                                         (float)id.y / (float)_image_height);                             
 
-    int structured_buffer_ID = texture_pixel_to_structured_buffer_ID(id.xy);                             
 
-    float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0);
+    float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 3);
            original_color = RGBtoHCV(original_color);
 
-    float3 forged_color   = _forged.SampleLevel(sampler_forged, texutre_coordinates, 0);
+    float3 forged_color   = _forged.SampleLevel(sampler_forged, texutre_coordinates, 3);
            forged_color   = RGBtoHCV(forged_color);
 
     float3 fittness       = abs(original_color - forged_color) ;
 
-    _per_pixel_fitness_buffer[structured_buffer_ID] = fittness.x *0.2 + fittness.y *0.2+ fittness.z*0.4;
+    int structured_buffer_ID = texture_pixel_to_structured_buffer_ID(id.xy);                             
+    _per_pixel_fitness_buffer[structured_buffer_ID] = fittness.x *0.33 + fittness.y *0.33+ fittness.z*0.33;
 
    // int2 texture_pixel = structured_buffer_id_to_texture_pixel(structured_buffer_ID);                  // Debug used to figure out what I have written 
    // _debug_texture[texture_pixel] = _per_pixel_fitness_buffer[structured_buffer_ID];                   // in the structured buffer _per_pixel_fitness. this texture can be blitted to the screen in EvolutionManager.cs for debug porpuses
@@ -83,7 +84,7 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 
 
 
-[numthreads(32, 1, 1)]                                                                                   // image dimensions should be a multiplye of 32 or power of 2. 32 threads per group
+[numthreads(64, 1, 1)]                                                                                   // image dimensions should be a multiplye of 64 or power of 2. 64 threads per group
 void CS_Sum_Rows(uint3 id : SV_DispatchThreadID)                                                         
 {                                                                                                        
                                                                                                          
@@ -92,7 +93,7 @@ void CS_Sum_Rows(uint3 id : SV_DispatchThreadID)
                                                                                                          
     for (int i = 0; i < _image_width; i++) {                                                             
                 texutre_pixel.x      = i;                                                                
-        int     structured_buffer_id = texture_pixel_to_structured_buffer_ID(id.xy);                       
+        int     structured_buffer_id = texture_pixel_to_structured_buffer_ID(texutre_pixel.xy);
                 sum                 += _per_pixel_fitness_buffer[structured_buffer_id];
     }                                                                                                    
     sum = sum / _image_width;                                                                            // Normalizing per row already. If we want a different distrubtuion (log fitness) or have problems with floating points error, we might want to normalize else where
@@ -112,7 +113,7 @@ void CS_Sum_Column(uint3 id : SV_DispatchThreadID)
     sum = sum / _image_height;                                                                           // normalizing on the column sum. Together with the normalizsation above, this makes the avarege on the screen. 
                   
     sum = 1. - sum;
-    _population_fitness_array[_population_id_handel] = pow(sum,5.);                                      // oneMinus because the sum represents how unfit the pixel is. Distance to the actual color.
+    _population_fitness_array[_population_id_handel] = sum;                                      // oneMinus because the sum represents how unfit the pixel is. Distance to the actual color.
 
 }
 
