@@ -4,8 +4,10 @@ using UnityEngine;
 
 static class CPUSystems{
 
+    
+
     // Change the values here to change range of brush stroke properties that can pop up as initial value. To change the mutation variables, you should look in to the Selection_compute_functions.compute
-    public static void InitatePopulationMember(ref Genes[] toPopulate)
+    public static void InitatePopulationMember(ref Genes[] toPopulate, float scale_lower_bound, float scale_higher_bound)
     {
         for(int i = 0; i<toPopulate.Length; i++)
         {
@@ -16,12 +18,37 @@ static class CPUSystems{
 
             member.z_Rotation = Random.value * Mathf.PI * 2.0f;
 
-            member.scale_X    = Random.Range(0.1f, 3.0f);
-            member.scale_Y    = Random.Range(0.1f, 3.0f);
+            member.scale_X    = Random.Range(scale_lower_bound, scale_higher_bound);
+            member.scale_Y    = Random.Range(scale_lower_bound, scale_higher_bound);
 
             member.color_r    = Random.value;
             member.color_g    = Random.value;
             member.color_b    = Random.value;
+
+            member.texture_ID = Random.Range(0, 4);
+            toPopulate[i] = member;
+        }
+
+    }
+
+
+        public static void InitatePopulationMemberBW(ref Genes[] toPopulate, float scale_lower_bound, float scale_higher_bound)
+    {
+        for(int i = 0; i<toPopulate.Length; i++)
+        {
+            Genes member = new Genes();
+
+            member.position_X = Random.Range(-1.0f, 1.0f);
+            member.position_Y = Random.Range(-1.0f, 1.0f);
+
+            member.z_Rotation = Random.value * Mathf.PI * 2.0f;
+
+            member.scale_X    = Random.Range(scale_lower_bound, scale_higher_bound);
+            member.scale_Y    = Random.Range(scale_lower_bound, scale_higher_bound);
+
+            member.color_r    = Random.value;
+            member.color_g    = member.color_r;
+            member.color_b    = member.color_r;
 
             member.texture_ID = Random.Range(0, 4);
             toPopulate[i] = member;

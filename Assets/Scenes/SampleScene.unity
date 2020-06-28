@@ -163,16 +163,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: 1dd75d2564851814d81f393cf27b3bdd, type: 3}
-  populationPoolNumber: 64
+  ImageToReproduce: {fileID: 2800000, guid: 2627f4c728c36144080b99fa3c872fa7, type: 3}
+  populationPoolNumber: 32
   maximumNumberOfBrushStrokes: 128
   brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
   mutationChance: 0.01
+  brushSizeLowerBound: 0.5
+  brushSizeHigherBound: 1
+  hueWeight: 0.3
+  satWeight: 0.3
+  valWeight: 0.3
+  fitnessPowFactor: 1
   compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
     type: 3}
   compute_selection_functions: {fileID: 7200000, guid: 9f091444f84ffd147a48ea7890b97224,
     type: 3}
-  user_set_forged: {fileID: 2800000, guid: 03b090e664a1a85489d0011709883a96, type: 3}
+  user_set_forged: {fileID: 2800000, guid: eeff9ece6e4424a40bbbb28be0980033, type: 3}
   turn_on_fitness_debug: 0
 --- !u!1 &705507993
 GameObject:

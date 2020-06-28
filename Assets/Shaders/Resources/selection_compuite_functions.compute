@@ -6,13 +6,6 @@
 #pragma kernel CS_mutation_and_copy
 
 
-#define Tau       6.283185307
-#define scale_low 0.1
-#define scale_up  3.0
-
-// The below macro is used to get a random number which varies across different generations. 
-
-#define rnd(seed, constant)  wang_rnd(seed +triple32(_generation_seed) * constant) 
 
 struct MemberIDFitnessPair 
 {
@@ -41,6 +34,8 @@ RWStructuredBuffer<Genes>    _second_gen_population_pool;
 RWStructuredBuffer<Genes>    _population_pool;
 
 int                          _generation_seed;                                                        // this is used to not generate the same random sequence for all generations.
+float                        _fittness_pow_factor;
+                                                                                                      
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_normalize_population_probabilities
 
@@ -60,9 +55,18 @@ int                          _image_height;                                     
 // Resource for CS_mutation_and_copy
 
 float                        _mutation_rate;
+float                        _scale_lower_bound;
+float                        _scale_higher_bound;
 
 // ----------------------------------------------------------------------------------------------------
 // -------------------- https://www.shadertoy.com/view/WttXWX
+#define Tau       6.283185307
+#define scale_low _scale_lower_bound
+#define scale_up  _scale_higher_bound
+
+// The below macro is used to get a random number which varies across different generations. 
+
+#define rnd(seed, constant)  wang_rnd(seed +triple32(_generation_seed) * constant) 
 
 uint triple32(uint x)
 {
@@ -105,6 +109,32 @@ inline Genes mutate_gene(uint seed)
     return toReturn;
 }
 
+inline Genes mutate_gene_BW(uint seed) 
+{
+    Genes toReturn;
+
+    toReturn.position   = float2(rnd(seed, 51),                                                       // Position X. range -1 -> 1
+                                 rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
+                                                                                                      
+    toReturn.z_Rotation = rnd(seed, 25) * Tau;                                                        // 0 to 360 degrees or 2 PI for our functions
+                                                                                                      
+    toReturn.scale      = float2(rnd(seed, 82),                                                       // Scale X.
+                                 rnd(seed, 7)) *                                                      // Scale Y.
+                                 (scale_up - scale_low) + scale_low;                                  // Remap to lower and higher bound of the scale range
+    float val           = rnd(seed, 62);
+
+    toReturn.color      = float3(val, val, val);                                                      // brush strokes color                                                                                                       
+    toReturn.texture_ID = floor(rnd(seed, 992) * 4);                                                  // integer id betwen 0 and 3 inclusive 0 and 3. So 4 elements
+
+
+    return toReturn;
+}
+
+inline float inverse_lerp(float value, float a, float b) 
+{
+    return max(0., value - a) / (b - a);
+}
+
 // ----------------------------------------------------------------------------------------------------
 
 [numthreads(1,1,1)]                                                                                   // This will run once, a single thread
@@ -116,20 +146,33 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
     
     float highest_fitness  = 0.0f;
     uint  m_fittest_member = 20000;
+
+    float lowest_fitness   = 1000000000.0;
     for (uint i = 0; i < _population_pool_size; i++) {
 
-        if(_population_fitness_array[i]> highest_fitness)                                              // this finds out which member has the highest fitness. This is used for visualisation at the end of the render loop, the fittest member is redrawn-
+        float f = _population_fitness_array[i];
+
+        if(f > highest_fitness)                                              // this finds out which member has the highest fitness. This is used for visualisation at the end of the render loop, the fittest member is redrawn-
         {
-            highest_fitness  = _population_fitness_array[i];
+            highest_fitness  = f;
             m_fittest_member = i;
         }
 
-        total_sum  += _population_fitness_array[i];
-        _population_accumlative_probablities_array[i] = total_sum;                                     // since I am using only one thread, I dont have to worry about writing to the same cacheline I am reading from and false sharing. 
+        if (f < lowest_fitness)
+        {
+            lowest_fitness = f;
+        }
     }
 
     _fittest_member[0].memberID      = m_fittest_member;
-    _fittest_member[0].memberFitness = highest_fitness;
+    _fittest_member[0].memberFitness = highest_fitness/ (_image_width * _image_height);
+
+    for (uint k = 0; k < _population_pool_size; k++) 
+    {
+        total_sum  += inverse_lerp(_population_fitness_array[k], lowest_fitness, highest_fitness);
+        _population_accumlative_probablities_array[k] = total_sum;                                     // since I am using only one thread, I dont have to worry about writing to the same cacheline I am reading from and false sharing. 
+    }
+
 
     temp = 0.0;
     for (uint j = 0; j < _population_pool_size; j++) {
@@ -142,7 +185,7 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(32,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
+[numthreads(16,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
 void CS_parent_selection(uint3 id : SV_DispatchThreadID)
 {
     

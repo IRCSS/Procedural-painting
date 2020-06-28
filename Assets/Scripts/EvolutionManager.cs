@@ -14,6 +14,13 @@ public class EvolutionManager : MonoBehaviour
     public  int                    maximumNumberOfBrushStrokes;               // this controls how many brush strokes can be used to replicate the image aka how many genes a population has
     public  Texture                brushTexture;                              // four textures in one texture. R, G, B and A each hold a texture of its own
     public  float                  mutationChance = 0.01f;
+    public  float                  brushSizeLowerBound  = 0.1f;
+    public  float                  brushSizeHigherBound = 1.0f;
+
+    public  float                  hueWeight;                                 // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
+    public  float                  satWeight;                                 // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
+    public  float                  valWeight;                                 // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
+    public  float                  fitnessPowFactor;
     [Header("Soft References")]
     public  ComputeShader          compute_fitness_function;                  // holds all code for the fitness function of the genetic evolution algo
     public  ComputeShader          compute_selection_functions;               // this file contains the compute kernels for the adjusting the fitness to accmulative weighted probablities, selecting parents, cross over as well as mutation
@@ -166,7 +173,7 @@ public class EvolutionManager : MonoBehaviour
 
         Genes[] initialPop = new Genes[total_number_of_genes];
 
-        CPUSystems.InitatePopulationMember(ref initialPop);
+        CPUSystems.InitatePopulationMember(ref initialPop, brushSizeLowerBound, brushSizeHigherBound);
         population_pool_buffer.SetData(initialPop);
         rendering_material.SetBuffer("_population_pool", population_pool_buffer);
 
@@ -251,11 +258,11 @@ public class EvolutionManager : MonoBehaviour
         //      ImageToReproduce.width / 8, ImageToReproduce.height / 8, 1);
         //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                   // used to debug how well the hashing works
 
-        if (populationPoolNumber % 32 != 0)
+        if (populationPoolNumber % 16 != 0)
             Debug.LogError("The population pool number is set to" + populationPoolNumber +
              "Which is not multiple of 32. Either change this number or numThreads in the compute shader!");
 
-        effect_command_buffer.DispatchCompute(compute_selection_functions, parent_selection_handel, populationPoolNumber / 32, 1, 1);
+        effect_command_buffer.DispatchCompute(compute_selection_functions, parent_selection_handel, populationPoolNumber / 16, 1, 1);
 
 
         if (total_number_of_genes % 128 != 0)
@@ -324,10 +331,19 @@ public class EvolutionManager : MonoBehaviour
     {
 
         generation_identifier++;
-        compute_selection_functions.SetInt("_generation_seed", generation_identifier + Random.Range(0, 2147483647));                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
+        compute_selection_functions.SetInt  ("_generation_seed",     generation_identifier + Random.Range(0, 2147483647));                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
+        compute_selection_functions.SetFloat("_scale_lower_bound",   brushSizeLowerBound);
+        compute_selection_functions.SetFloat("_scale_higher_bound",  brushSizeHigherBound);
+        compute_selection_functions.SetFloat("_mutation_rate",       mutationChance);
+        compute_selection_functions.SetFloat("_fittness_pow_factor", fitnessPowFactor);
 
 
-        compute_selection_functions.SetFloat("_mutation_rate", mutationChance);
+
+        compute_fitness_function.SetFloat("_hue_weight", hueWeight);
+        compute_fitness_function.SetFloat("_sat_weight", satWeight);
+        compute_fitness_function.SetFloat("_val_weight", valWeight);
+
+
     }
 
 
