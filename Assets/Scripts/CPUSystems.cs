@@ -18,8 +18,10 @@ static class CPUSystems{
 
             member.z_Rotation = Random.value * Mathf.PI * 2.0f;
 
-            member.scale_X    = Random.Range(scale_lower_bound, scale_higher_bound);
-            member.scale_Y    = Random.Range(scale_lower_bound, scale_higher_bound);
+            float scale_adjust= 1.0f - ((float)(i) / (float)(toPopulate.Length));
+
+            member.scale_X    = Random.Range(scale_lower_bound, scale_lower_bound + (scale_higher_bound - scale_lower_bound) * scale_adjust);
+            member.scale_Y    = Random.Range(scale_lower_bound, scale_lower_bound + (scale_higher_bound - scale_lower_bound) * scale_adjust);
 
             member.color_r    = Random.value;
             member.color_g    = Random.value;
@@ -43,8 +45,10 @@ static class CPUSystems{
 
             member.z_Rotation = Random.value * Mathf.PI * 2.0f;
 
-            member.scale_X    = Random.Range(scale_lower_bound, scale_higher_bound);
-            member.scale_Y    = Random.Range(scale_lower_bound, scale_higher_bound);
+            float scale_adjust= 1.0f - ((float)(i) / (float)(toPopulate.Length));
+
+            member.scale_X    = Random.Range(scale_lower_bound, scale_lower_bound + (scale_higher_bound - scale_lower_bound) * scale_adjust);
+            member.scale_Y    = Random.Range(scale_lower_bound, scale_lower_bound + (scale_higher_bound - scale_lower_bound) * scale_adjust);
 
             member.color_r    = Random.value;
             member.color_g    = member.color_r;

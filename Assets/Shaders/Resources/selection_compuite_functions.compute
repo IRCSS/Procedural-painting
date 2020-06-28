@@ -87,7 +87,7 @@ float wang_rnd(uint seed)
     return ((float)rndint) / float(0xFFFFFFFF);                                                       // 0xFFFFFFFF is max unsigned integer in hexa decimal
 }
 
-inline Genes mutate_gene(uint seed) 
+inline Genes mutate_gene(uint seed, uint geneID) 
 {
     Genes toReturn;
 
@@ -95,10 +95,11 @@ inline Genes mutate_gene(uint seed)
                                  rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
                                                                                                       
     toReturn.z_Rotation = rnd(seed, 25) * Tau;                                                        // 0 to 360 degrees or 2 PI for our functions
-                                                                                                      
+                                        
+    float f = 1. - ((float)geneID / (float)_genes_number_per_member);
     toReturn.scale      = float2(rnd(seed, 82),                                                       // Scale X.
                                  rnd(seed, 7)) *                                                      // Scale Y.
-                                 (scale_up - scale_low) + scale_low;                                                      // Remap to lower and higher bound of the scale range
+                                 (scale_up - scale_low) * max(0.2, f) + scale_low;                              // Remap to lower and higher bound of the scale range
                                                                                                       
     toReturn.color      = float3(rnd(seed, 62),                                                       // brush strokes color channel. R
                                  rnd(seed, 13),                                                       // brush strokes color channel. G
@@ -110,7 +111,7 @@ inline Genes mutate_gene(uint seed)
     return toReturn;
 }
 
-inline Genes mutate_gene_BW(uint seed) 
+inline Genes mutate_gene_BW(uint seed, uint geneID)
 {
     Genes toReturn;
 
@@ -118,10 +119,11 @@ inline Genes mutate_gene_BW(uint seed)
                                  rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
                                                                                                       
     toReturn.z_Rotation = rnd(seed, 25) * Tau;                                                        // 0 to 360 degrees or 2 PI for our functions
-                                                                                                      
+               
+    float f = 1. - ((float)geneID / (float)_genes_number_per_member);
     toReturn.scale      = float2(rnd(seed, 82),                                                       // Scale X.
                                  rnd(seed, 7)) *                                                      // Scale Y.
-                                 (scale_up - scale_low) + scale_low;                                  // Remap to lower and higher bound of the scale range
+                                 (scale_up - scale_low) * max(0.2,f)+ scale_low;                             // Remap to lower and higher bound of the scale range
     float val           = rnd(seed, 62);
 
     toReturn.color      = float3(val, val, val);                                                      // brush strokes color                                                                                                       
@@ -242,9 +244,9 @@ void CS_mutation_and_copy(uint3 id : SV_DispatchThreadID)
 {
     float rand = rnd(id.x, 45);
 
-    
+    uint  popluation_gene_id = fmod(id.x, _genes_number_per_member);
 
-    if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene(id.x);
+    if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene(id.x, popluation_gene_id);
     else _population_pool[id.x] = _second_gen_population_pool[id.x];
 
 }
@@ -254,9 +256,9 @@ void CS_mutation_and_copy_BW(uint3 id : SV_DispatchThreadID)
 {
     float rand = rnd(id.x, 45);
 
+    uint  popluation_gene_id = fmod (id.x,  _genes_number_per_member); 
 
-
-    if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene_BW(id.x);
+    if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene_BW(id.x, popluation_gene_id);
     else _population_pool[id.x] = _second_gen_population_pool[id.x];
 
 }
