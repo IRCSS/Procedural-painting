@@ -13,6 +13,8 @@ public class EvolutionManager : MonoBehaviour
     public  int                    populationPoolNumber;                      // larger population pool could lead to reducing number of generations required to get to the answer however increases the memory overhead
     public  int                    maximumNumberOfBrushStrokes;               // this controls how many brush strokes can be used to replicate the image aka how many genes a population has
     public  Texture                brushTexture;                              // four textures in one texture. R, G, B and A each hold a texture of its own
+
+    public  bool                   blackAnwWhite;
     public  float                  mutationChance = 0.01f;
     public  float                  brushSizeLowerBound  = 0.1f;
     public  float                  brushSizeHigherBound = 1.0f;
@@ -132,8 +134,12 @@ public class EvolutionManager : MonoBehaviour
         debug_hash_handel                  = compute_selection_functions.FindKernel("CS_debug_wang_hash");
         parent_selection_handel            = compute_selection_functions.FindKernel("CS_parent_selection");
         cross_over_handel                  = compute_selection_functions.FindKernel("CS_cross_over");
-        mutation_and_copy_handel           = compute_selection_functions.FindKernel("CS_mutation_and_copy");
+       
 
+        if (!blackAnwWhite)
+            mutation_and_copy_handel = compute_selection_functions.FindKernel("CS_mutation_and_copy");
+        else
+            mutation_and_copy_handel = compute_selection_functions.FindKernel("CS_mutation_and_copy_BW");
 
         // -----------------------
         // Compute Shader Bindings
@@ -173,7 +179,11 @@ public class EvolutionManager : MonoBehaviour
 
         Genes[] initialPop = new Genes[total_number_of_genes];
 
+        if(!blackAnwWhite)
         CPUSystems.InitatePopulationMember(ref initialPop, brushSizeLowerBound, brushSizeHigherBound);
+        else
+        CPUSystems.InitatePopulationMemberBW(ref initialPop, brushSizeLowerBound, brushSizeHigherBound);
+
         population_pool_buffer.SetData(initialPop);
         rendering_material.SetBuffer("_population_pool", population_pool_buffer);
 

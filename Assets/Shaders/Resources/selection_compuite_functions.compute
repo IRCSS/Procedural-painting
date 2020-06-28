@@ -4,6 +4,7 @@
 #pragma kernel CS_debug_wang_hash
 #pragma kernel CS_cross_over
 #pragma kernel CS_mutation_and_copy
+#pragma kernel CS_mutation_and_copy_BW
 
 
 
@@ -169,7 +170,7 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 
     for (uint k = 0; k < _population_pool_size; k++) 
     {
-        total_sum  += inverse_lerp(_population_fitness_array[k], lowest_fitness, highest_fitness);
+        total_sum  += pow(inverse_lerp(_population_fitness_array[k], lowest_fitness, highest_fitness), _fittness_pow_factor);
         _population_accumlative_probablities_array[k] = total_sum;                                     // since I am using only one thread, I dont have to worry about writing to the same cacheline I am reading from and false sharing. 
     }
 
@@ -244,6 +245,18 @@ void CS_mutation_and_copy(uint3 id : SV_DispatchThreadID)
     
 
     if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene(id.x);
+    else _population_pool[id.x] = _second_gen_population_pool[id.x];
+
+}
+
+[numthreads(128, 1, 1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+void CS_mutation_and_copy_BW(uint3 id : SV_DispatchThreadID)
+{
+    float rand = rnd(id.x, 45);
+
+
+
+    if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene_BW(id.x);
     else _population_pool[id.x] = _second_gen_population_pool[id.x];
 
 }
