@@ -5,6 +5,7 @@
     {
         Tags {"Queue" = "Transparent" "RenderType" = "Transparent" }
         ZWrite Off
+        ZTest Always
         Blend SrcAlpha OneMinusSrcAlpha
         
         LOD 100

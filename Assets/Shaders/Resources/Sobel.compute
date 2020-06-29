@@ -1,0 +1,51 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Sobel
+
+// based on https://www.shadertoy.com/view/Xdf3Rf by Jeroen Baert
+
+
+
+Texture2D<float4>   _source;
+RWTexture2D<float4> _result;
+SamplerState        sampler_source;                                              // Needs to be named like this in Unity. Or use one of the basic sampler
+SamplerState        sampler_result;                                              // Needs to be named like this in Unity. Or use one of the basic sampler
+
+
+int _source_width;
+int _source_height;
+
+
+[numthreads(32,32,1)]                                                            // Image should ba multiple of 32
+void Sobel(uint3 id : SV_DispatchThreadID)
+{
+    float2 step = float2(1.0 / _source_width, 1.0 / _source_height);
+    float2 uv   = float2(id.x * step.x, id.y * step.y);
+
+    // Samples Matrix
+    // | 1_1, 1_2, 1_3 |
+    // | 2_1, 2_2, 2_3 |
+    // | 3_1, 3_2, 3_3 | 
+
+    float3 top_left      = _source.SampleLevel(sampler_source, uv + float2(-step.x,  step.y), 0).xyz;  // 1_1
+    float3 center_left   = _source.SampleLevel(sampler_source, uv + float2(-step.x,     0.0), 0).xyz;  // 2_1
+    float3 bottom_left   = _source.SampleLevel(sampler_source, uv + float2(-step.x, -step.y), 0).xyz;  // 3_1
+    float3 top_center    = _source.SampleLevel(sampler_source, uv + float2(     0.,  step.y), 0).xyz;  // 1_2
+    float3 bottom_center = _source.SampleLevel(sampler_source, uv + float2(     0., -step.y), 0).xyz;  // 3_2
+    float3 top_right     = _source.SampleLevel(sampler_source, uv + float2( step.x,  step.y), 0).xyz;  // 1_3
+    float3 center_right  = _source.SampleLevel(sampler_source, uv + float2( step.x,     0.0), 0).xyz;  // 2_3
+    float3 buttom_right  = _source.SampleLevel(sampler_source, uv + float2( step.x, -step.y), 0).xyz;  // 3_3
+
+    // Sobel masks (see http://en.wikipedia.org/wiki/Sobel_operator)
+    //        | 1 0 -1 |     |-1 -2 -1 |
+    //    X = | 2 0 -2 |  Y =| 0  0  0 |
+    //        | 1 0 -1 |     | 1  2  1 |
+
+    //                                       Left                               -                  Right 
+    float3 horizontal       = (top_left    + 2.0 * center_left   + bottom_left)  - (top_right + 2.0 * center_right + buttom_right);
+    //                                       Bottom                             -                  Top 
+    float3 vertical         = (bottom_left + 2.0 * bottom_center + buttom_right) - (top_left  + 2.0 * top_center   + top_right);
+
+    float3 color = sqrt(horizontal*horizontal + vertical * vertical);
+
+    _result[id.xy] = float4(color.xyz, 1.);
+}

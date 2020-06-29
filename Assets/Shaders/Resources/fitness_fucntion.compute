@@ -67,10 +67,10 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
                                         (float)id.y / (float)_image_height);                             
 
 
-    float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 3).xyz;
+    float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0).xyz;
            //original_color = RGBtoHCV(original_color);
 
-    float3 forged_color   = _forged.SampleLevel(sampler_forged, texutre_coordinates, 3).xyz;
+    float3 forged_color   = _forged.SampleLevel(sampler_forged, texutre_coordinates, 0).xyz;
            //forged_color   = RGBtoHCV(forged_color);
 
     float3 fittness       = 1. - saturate(abs(original_color - forged_color)) ;
