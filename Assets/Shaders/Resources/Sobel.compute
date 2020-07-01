@@ -8,7 +8,6 @@
 Texture2D<float4>   _source;
 RWTexture2D<float4> _result;
 SamplerState        sampler_source;                                              // Needs to be named like this in Unity. Or use one of the basic sampler
-SamplerState        sampler_result;                                              // Needs to be named like this in Unity. Or use one of the basic sampler
 
 
 int _source_width;

@@ -1,0 +1,93 @@
+﻿
+#pragma kernel CS_gaussian_horizontal
+#pragma kernel CS_gaussian_vertical
+
+
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+// Parameters for all Kernels
+
+uint                _kernel_size = 3;            // How large is the gaussian kernel/ filter. Needs to be set in CPU, the 3 is only there as reference 
+float               _gaussian_sigma;
+uint                _source_width;
+uint                _source_height;
+
+#define Tau  6.283185307
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+// Horizontal Kernel Parameters
+
+Texture2D<float4>   _horizontal_source;
+RWTexture2D<float4> _horizontal_results;
+
+SamplerState        sampler_horizontal_source;                                              // Needs to be named like this in Unity. Or use one of the basic sampler
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+
+// Gaussian filter expressed with standard deviation. See https://en.wikipedia.org/wiki/Gaussian_filter
+float gaussian(float x) {
+    float sigma2 = _gaussian_sigma * _gaussian_sigma;
+    return  exp(-(x*x) / 2.0*sigma2) * (1 / sqrt(Tau*_gaussian_sigma));
+    
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+
+[numthreads(8,8,1)]
+void CS_gaussian_horizontal(uint3 id : SV_DispatchThreadID)
+{
+
+
+    float3 pixel_value = float3(0., 0., 0.);
+
+    float2 step        = float2(1.0 / _source_width, 1.0 / _source_height);
+    float2 texture_uv  = float2(id.x * step.x, id.y * step.y);
+
+    int    range       = (int)((_kernel_size - 1 / 2));
+
+    float  sum         = 0.0f;
+    for(int x = -range; x<= range; ++x)
+    {
+        float gaus_factor = gaussian(x);
+        sum += gaus_factor;
+        pixel_value += gaus_factor * _horizontal_source.SampleLevel(sampler_horizontal_source, texture_uv + float2(step.x * x, 0.0), 0).xyz;
+    }
+
+
+    _horizontal_results[id.xy] = float4(pixel_value.xyz/ sum, 1.);
+}
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+// Horizontal Kernel Parameters
+
+Texture2D<float4>   _vertical_source;
+RWTexture2D<float4> _vertical_results;
+
+SamplerState        sampler_vertical_source;                                              // Needs to be named like this in Unity. Or use one of the basic sampler
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------
+
+[numthreads(8, 8, 1)]
+void CS_gaussian_vertical(uint3 id : SV_DispatchThreadID)
+{
+
+
+    float3 pixel_value = float3(0., 0., 0.);
+
+    float2 step = float2(1.0 / _source_width, 1.0 / _source_height);
+    float2 texture_uv = float2(id.x * step.x, id.y * step.y);
+
+    int    range = (int)((_kernel_size - 1 / 2));
+
+    float  sum = 0.0f;
+    for (int y = -range; y <= range; ++y)
+    {
+        float gaus_factor = gaussian(y);
+        sum += gaus_factor;
+        pixel_value += gaus_factor *  _vertical_source.SampleLevel(sampler_vertical_source, texture_uv + float2(0.0, step.y * y), 0).xyz;
+
+    }
+
+
+    _vertical_results[id.xy] = float4(pixel_value.xyz / sum, 1.);
+}
