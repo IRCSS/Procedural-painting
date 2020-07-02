@@ -3,12 +3,49 @@ using System.Collections.Generic;
 using UnityEngine.Rendering;
 using UnityEngine;
 
+
+public struct Compute_Shaders
+{
+    public ComputeShader compute_fitness_function;
+    public ComputeShader compute_selection_functions;
+    public ComputeShader gaussian_compute;
+    public ComputeShader sobel_compute;
+
+    public int per_pixel_fitness_kernel_handel;                              // Handels used to dispatch compute. This function calculatis fitness on level of pixel by comparing it to orginal
+    public int sun_rows_kernel_handel;                                       // Handels used to dispatch compute. Sums up each pixel of a row to a single value. The result is an array of floats
+    public int sun_column_kernel_handel;                                     // Handels used to dispatch compute. Sums up the sums of rows that are saved in a single column to one float.
+    public int trans_fitness_to_prob_handel;                                 // Handel used to dispatch compute.  this is used to convert the fitness values which are already normalized to an accumaletive weighted probabilities for sampling 
+    public int debug_hash_handel;                                            // Used for debuging how well the hash creation function is working
+    public int parent_selection_handel;                                      // used for selecting a pair of parents for each second geneariton of population members  
+    public int cross_over_handel;                                            // This compute shader breeds the second generation based on the parents and creates a second generation per population pool
+    public int mutation_and_copy_handel;                                     // This copies over the second generation members to the main buffer to be rendered in the next frame and mutates some of the genes along the way
+    public int mutation_and_copy_BW_handel;                                  // This copies over the second generation members to the main buffer to be rendered in the next frame and mutates some of the genes along the way. The mutates genes are colorless and only have value
+
+    public void Construct_Computes()
+    {
+        per_pixel_fitness_kernel_handel    = compute_fitness_function.FindKernel("CS_Fitness_Per_Pixel");
+        sun_rows_kernel_handel             = compute_fitness_function.FindKernel("CS_Sum_Rows");
+        sun_column_kernel_handel           = compute_fitness_function.FindKernel("CS_Sum_Column");
+        trans_fitness_to_prob_handel       = compute_selection_functions.FindKernel("CS_transform_fitness_to_probability");
+        debug_hash_handel                  = compute_selection_functions.FindKernel("CS_debug_wang_hash");
+        parent_selection_handel            = compute_selection_functions.FindKernel("CS_parent_selection");
+        cross_over_handel                  = compute_selection_functions.FindKernel("CS_cross_over");
+        mutation_and_copy_handel           = compute_selection_functions.FindKernel("CS_mutation_and_copy");
+        mutation_and_copy_BW_handel        = compute_selection_functions.FindKernel("CS_mutation_and_copy_BW");
+    }
+
+}
+
 public class EvolutionManager : MonoBehaviour
 {
 
     [Header("Image")]
     public  Texture                ImageToReproduce;                          // This image is used for the evolution algo and is the ground truth
-            
+          
+    
+    [Header("Scale Settings")]
+    public  ScaleStage[]           stages;
+
     [Header("Evelution Settings")]
     public  int                    populationPoolNumber;                      // larger population pool could lead to reducing number of generations required to get to the answer however increases the memory overhead
     public  int                    maximumNumberOfBrushStrokes;               // this controls how many brush strokes can be used to replicate the image aka how many genes a population has
