@@ -10,7 +10,7 @@ public class GaussianDebug : MonoBehaviour
     public  ComputeShader gaussian_compute;
 
     public  int           kernelSize = 3;
-    [Range(0.0f, 1.0f)]
+
     public  float         sigma      = 4;
 
     private RenderTexture horizontal_target;

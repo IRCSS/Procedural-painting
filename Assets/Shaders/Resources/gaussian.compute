@@ -27,7 +27,7 @@ SamplerState        sampler_horizontal_source;                                  
 // Gaussian filter expressed with standard deviation. See https://en.wikipedia.org/wiki/Gaussian_filter
 float gaussian(float x) {
     float sigma2 = _gaussian_sigma * _gaussian_sigma;
-    return  exp(-(x*x) / 2.0*sigma2) * (1 / sqrt(Tau*_gaussian_sigma));
+    return  exp(-((x*x) / (2.0*sigma2))) * (1 / sqrt(Tau*_gaussian_sigma));
     
 }
 
