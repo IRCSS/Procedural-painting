@@ -12,13 +12,15 @@ SamplerState        sampler_source;                                             
 
 int _source_width;
 int _source_height;
-
+int _kernel_size;
 
 [numthreads(32,32,1)]                                                            // Image should ba multiple of 32
 void Sobel(uint3 id : SV_DispatchThreadID)
 {
     float2 step = float2(1.0 / _source_width, 1.0 / _source_height);
     float2 uv   = float2(id.x * step.x, id.y * step.y);
+
+    step *= _kernel_size;
 
     // Samples Matrix
     // | 1_1, 1_2, 1_3 |

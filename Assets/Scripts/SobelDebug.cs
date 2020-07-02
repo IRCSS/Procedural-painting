@@ -35,7 +35,7 @@ public class SobelDebug : MonoBehaviour
 
         sobel_compute.SetInt("_source_width",  source_texture.width);
         sobel_compute.SetInt("_source_height", source_texture.height);
-
+        sobel_compute.SetInt("_kernel_size", 1);
         cb = new CommandBuffer()
         {
             name = "Sobel_Test_Pass"
