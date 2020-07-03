@@ -163,7 +163,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: ff114e3428c840b429cfcdfe9991e419, type: 3}
+  ImageToReproduce: {fileID: 2800000, guid: 1dd75d2564851814d81f393cf27b3bdd, type: 3}
+  stages:
+  - sigma: 0
+    gaussian_kernel_size: 0
+    sobel_step_size: 0
+    populationPoolNumber: 64
+    maximumNumberOfBrushStrokes: 64
+    brushTexture: {fileID: 0}
+    blackAnwWhite: 0
+    mutationChance: 0.01
+    brushSizeLowerBound: 0.1
+    brushSizeHigherBound: 1
+    hueWeight: 0.3333
+    satWeight: 0.3333
+    valWeight: 0.3333
+    fitnessPowFactor: 4
+  - sigma: 0
+    gaussian_kernel_size: 0
+    sobel_step_size: 0
+    populationPoolNumber: 64
+    maximumNumberOfBrushStrokes: 64
+    brushTexture: {fileID: 0}
+    blackAnwWhite: 0
+    mutationChance: 0.01
+    brushSizeLowerBound: 0.1
+    brushSizeHigherBound: 1
+    hueWeight: 0.3333
+    satWeight: 0.3333
+    valWeight: 0.3333
+    fitnessPowFactor: 4
   populationPoolNumber: 64
   maximumNumberOfBrushStrokes: 64
   brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
@@ -175,10 +204,13 @@ MonoBehaviour:
   satWeight: 0.3
   valWeight: 0.3
   fitnessPowFactor: 4
-  compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
-    type: 3}
-  compute_selection_functions: {fileID: 7200000, guid: 9f091444f84ffd147a48ea7890b97224,
-    type: 3}
+  compute_shaders:
+    compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
+      type: 3}
+    compute_selection_functions: {fileID: 7200000, guid: 9f091444f84ffd147a48ea7890b97224,
+      type: 3}
+    gaussian_compute: {fileID: 7200000, guid: 4e16609530cd942438ef34742b69dd5f, type: 3}
+    sobel_compute: {fileID: 7200000, guid: 059afd89258149446b7ec661f2d43913, type: 3}
   user_set_forged: {fileID: 2800000, guid: eeff9ece6e4424a40bbbb28be0980033, type: 3}
   turn_on_fitness_debug: 0
 --- !u!1 &705507993
