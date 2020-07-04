@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// I have all the stuff here as classes to avoid them bein passed on by value in functions, and always passed on by reference. Structs would trigger a coppy, which is not a big deal 
+// since they are only holding ids, and unity takes care of the GPU resources so that no destruction/ construction are called, but it never hurts to be tripple sure
+
 [System.Serializable]
-public struct Compute_Shaders
+public class Compute_Shaders
 {
     // ____________________________________________________________________________________________________
     // Hard references for the computes
@@ -160,7 +163,7 @@ public struct Compute_Shaders
 // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-public struct Compute_Resources                                                                                           // Encapsulates all the buffers and render textures
+public class Compute_Resources                                               // Encapsulates all the buffers and render textures
 {
 
     public ComputeBuffer          population_pool_buffer;                    // Where the population memebers live. The length of this list is population number * number of genes (brush strokes) per population. It is an array of genes where the population member are implied through indexing and strides
@@ -175,11 +178,12 @@ public struct Compute_Resources                                                 
 
     public RenderTexture          active_texture_target;                     // the population is renedred in this render texture, it is compared per pixel for fitness in compute later
     public RenderTexture          compute_forged_in_render_texture;          // After rendering is done and written to active render texture, the results is coppied here, Without this copy, I was getting some weird issues with bindings and rebinding
-    public RenderTexture          debug_texture;                             // texture used to visualize the compute calclulations
+    public RenderTexture          debug_texture;                             // texture used to visualize the compute calclulations. It is not always bound, you need to write code to bind it. I am just leaving it here so that I dont need to create a new texture every time for debuging
+    public RenderTexture          clear_base;                                // This is the image used to clear the render target. After the first stage, this would be the basis which the second/ thirds etc stages would paint on
 
     // ____________________________________________________________________________________________________
     // Constructor
-    public void Consruct_Buffers(Texture Image_to_reproduce, Evolution_Settings evolution_setting)
+    public void Consruct_Buffers(Texture Image_to_reproduce, RenderTexture stage_base, Evolution_Settings evolution_setting)
     {
         int  pixel_count_in_image           = Image_to_reproduce.width * Image_to_reproduce.height;
         uint total_number_of_genes          = evolution_setting.populationPoolNumber * evolution_setting.maximumNumberOfBrushStrokes;                      // although population_pool is the array of populations, each population memberis implied through the max number of brushes. It is in parsing an array of genes.
@@ -207,6 +211,14 @@ public struct Compute_Resources                                                 
         debug_texture.enableRandomWrite = true;
         debug_texture.Create();
 
+
+        if (stage_base)
+        {
+           clear_base = new RenderTexture(stage_base);
+           clear_base.Create();
+           Graphics.Blit(stage_base, clear_base);
+        }
+        
     }
 
 
@@ -227,6 +239,8 @@ public struct Compute_Resources                                                 
         active_texture_target.             Release();
         compute_forged_in_render_texture.  Release();
         debug_texture.                     Release();
+        clear_base.                        Release();
+
     }
 
 }
