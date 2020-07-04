@@ -39,9 +39,9 @@ public struct Compute_Shaders
     public void Construct_Computes()
     {
 
-        per_pixel_fitness_kernel_handel = compute_fitness_function.FindKernel("CS_Fitness_Per_Pixel");
-        sun_rows_kernel_handel          = compute_fitness_function.FindKernel("CS_Sum_Rows");
-        sun_column_kernel_handel        = compute_fitness_function.FindKernel("CS_Sum_Column");
+        per_pixel_fitness_kernel_handel = compute_fitness_function.FindKernel   ("CS_Fitness_Per_Pixel");
+        sun_rows_kernel_handel          = compute_fitness_function.FindKernel   ("CS_Sum_Rows");
+        sun_column_kernel_handel        = compute_fitness_function.FindKernel   ("CS_Sum_Column");
         trans_fitness_to_prob_handel    = compute_selection_functions.FindKernel("CS_transform_fitness_to_probability");
         debug_hash_handel               = compute_selection_functions.FindKernel("CS_debug_wang_hash");
         parent_selection_handel         = compute_selection_functions.FindKernel("CS_parent_selection");
@@ -51,47 +51,64 @@ public struct Compute_Shaders
     }
 
     
+    public void Bind_Compute_Resources(Texture target_image, Compute_Resources compute_resources, Evolution_Settings evolution_settings)
+    {
+        bind_population_pool_buffer                     (compute_resources.population_pool_buffer);
+        bind_second_gen_buffer                          (compute_resources.second_gen_population_pool_buffer);
+        bind_per_pixel_fitness_buffer                   (compute_resources.per_pixel_fitnes_buffer);
+        bind_rows_sum_buffer                            (compute_resources.per_row_sum_buffer);
+        bind_population_pool_fitness_buffer             (compute_resources.population_pool_fitness_buffer);
+        bind_population_accumlative_probablities_buffer (compute_resources.population_accumlative_prob_buffer);
+        bind_second_gen_parent_ids_buffer               (compute_resources.second_gen_parents_ids_buffer);
+        bind_fittest_member_buffer                      (compute_resources.fittest_member_buffer);
+
+        bind_original_texture(target_image);
+        bind_forged_texture  (compute_resources.compute_forged_in_render_texture);
+
+        set_image_dimensions((uint)target_image.width, (uint)target_image.height);
+        set_evolution_settings(evolution_settings.populationPoolNumber, evolution_settings.maximumNumberOfBrushStrokes);
+    }
 
     // ____________________________________________________________________________________________________
     // Binding Compute Buffers
 
-    public void bind_population_pool_buffer(ComputeBuffer buffer)
+    private void bind_population_pool_buffer(ComputeBuffer buffer)
     {
         bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel, parent_selection_handel, cross_over_handel, mutation_and_copy_handel, mutation_and_copy_BW_handel }, "_population_pool", buffer);
     }
 
-    public void bind_second_gen_buffer(ComputeBuffer buffer)
+    private void bind_second_gen_buffer(ComputeBuffer buffer)
     {
         bind_buffers_on_compute(compute_selection_functions, new int[] { cross_over_handel, mutation_and_copy_handel, mutation_and_copy_BW_handel }, "_second_gen_population_pool", buffer);
     }
 
-    public void bind_per_pixel_fitness_buffer(ComputeBuffer buffer)
+    private void bind_per_pixel_fitness_buffer(ComputeBuffer buffer)
     {
-        bind_buffers_on_compute(compute_fitness_function, new int[] { per_pixel_fitness_kernel_handel, sun_rows_kernel_handel }, "_per_pixel_fitness_buffer", buffer);
+        bind_buffers_on_compute(compute_fitness_function,    new int[] { per_pixel_fitness_kernel_handel, sun_rows_kernel_handel }, "_per_pixel_fitness_buffer", buffer);
     }
 
-    public void bind_rows_sum_buffer(ComputeBuffer buffer)
+    private void bind_rows_sum_buffer(ComputeBuffer buffer)
     {
-        bind_buffers_on_compute(compute_fitness_function, new int[] { sun_rows_kernel_handel, sun_column_kernel_handel }, "_rows_sums_array", buffer);
+        bind_buffers_on_compute(compute_fitness_function,    new int[] { sun_rows_kernel_handel, sun_column_kernel_handel }, "_rows_sums_array", buffer);
     }
 
-    public void bind_population_pool_fitness_buffer(ComputeBuffer buffer)
+    private void bind_population_pool_fitness_buffer(ComputeBuffer buffer)
     {
         bind_buffers_on_compute(compute_fitness_function,    new int[] { sun_column_kernel_handel },     "_population_fitness_array", buffer);
         bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel }, "_population_fitness_array", buffer);
     }
 
-    public void bind_population_accumlative_probablities_buffer(ComputeBuffer buffer)
+    private void bind_population_accumlative_probablities_buffer(ComputeBuffer buffer)
     {
         bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel, parent_selection_handel }, "_population_accumlative_probablities_array", buffer);
     }
 
-    public void bind_second_gen_parent_ids_buffer(ComputeBuffer buffer)
+    private void bind_second_gen_parent_ids_buffer(ComputeBuffer buffer)
     {
         bind_buffers_on_compute(compute_selection_functions, new int[] { parent_selection_handel, cross_over_handel }, "_second_gen_parent_ids", buffer);
     }
 
-    public void bind_fittest_member_buffer(ComputeBuffer buffer)
+    private void bind_fittest_member_buffer(ComputeBuffer buffer)
     {
         bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel }, "_fittest_member", buffer);
     }
@@ -99,17 +116,17 @@ public struct Compute_Shaders
     // ____________________________________________________________________________________________________
     // Bind Textures
 
-    public void bind_original_texture(Texture original)
+    private void bind_original_texture(Texture original)
     {
         compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_original", original);
     }
 
-    public void bind_forged_texture(Texture forged)
+    private void bind_forged_texture(Texture forged)
     {
         compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged", forged);
     }
 
-    public void set_image_dimensions(uint width, uint height)
+    private void set_image_dimensions(uint width, uint height)
     {
         compute_fitness_function.SetInt       ("_image_width",      (int) width);
         compute_fitness_function.SetInt       ("_image_height",     (int) height);
@@ -117,7 +134,7 @@ public struct Compute_Shaders
         compute_selection_functions.SetInt    ("_image_height",     (int) height);
     }
 
-    public void set_evolution_settings(uint population_size, uint genes_number_per_population)
+    private void set_evolution_settings(uint population_size, uint genes_number_per_population)
     {
         compute_selection_functions.SetInt    ("_population_pool_size",    (int) population_size);
         compute_selection_functions.SetInt    ("_genes_number_per_member", (int) genes_number_per_population);
@@ -162,30 +179,30 @@ public struct Compute_Resources                                                 
 
     // ____________________________________________________________________________________________________
     // Constructor
-    public void Consruct_Buffers(uint image_width, uint image_height, uint population_number, uint genes_number_per_population)
+    public void Consruct_Buffers(Texture Image_to_reproduce, Evolution_Settings evolution_setting)
     {
-        uint pixel_count_in_image           = image_width * image_height;
-        uint total_number_of_genes          = population_number * genes_number_per_population;                                                     // although population_pool is the array of populations, each population memberis implied through the max number of brushes. It is in parsing an array of genes.
+        int  pixel_count_in_image           = Image_to_reproduce.width * Image_to_reproduce.height;
+        uint total_number_of_genes          = evolution_setting.populationPoolNumber * evolution_setting.maximumNumberOfBrushStrokes;                      // although population_pool is the array of populations, each population memberis implied through the max number of brushes. It is in parsing an array of genes.
 
-        population_pool_buffer             = new ComputeBuffer((int)total_number_of_genes,          sizeof(float) * 8 + sizeof(int) * 1);          // for the stride size look ath the DNA.cs and defination of Genes. 
-        second_gen_population_pool_buffer  = new ComputeBuffer((int)total_number_of_genes,          sizeof(float) * 8 + sizeof(int) * 1);          // exact same layout as the one above
-        per_pixel_fitnes_buffer            = new ComputeBuffer((int)pixel_count_in_image,           sizeof(float)                      );          // this buffer has one entry per image pixel. So width*height
-        per_row_sum_buffer                 = new ComputeBuffer((int)image_height,                   sizeof(float)                      );          // This will have one entry per row of the image. So as many as the height value of the render target. Each of these entries will hold the sum of that row
-        population_pool_fitness_buffer     = new ComputeBuffer((int)population_number,              sizeof(float)                      );
-        population_accumlative_prob_buffer = new ComputeBuffer((int)population_number,              sizeof(float)                      );          // You could combin this and the fitnes buffer together, I am keeping them seprated for the sake of debuging ease
-        second_gen_parents_ids_buffer      = new ComputeBuffer((int)population_number,              sizeof(int)   * 2                  );          // ids (int) paris. Needs to change to smoething else if you have more than 2 parent
-        fittest_member_buffer              = new ComputeBuffer(1,                                   sizeof(float) + sizeof(int)        );          // This is a single value. Not sure how to bind it as random read write access without creating an entire buffer
+        population_pool_buffer             = new ComputeBuffer((int)total_number_of_genes,                  sizeof(float) * 8 + sizeof(int) * 1);          // for the stride size look ath the DNA.cs and defination of Genes. 
+        second_gen_population_pool_buffer  = new ComputeBuffer((int)total_number_of_genes,                  sizeof(float) * 8 + sizeof(int) * 1);          // exact same layout as the one above
+        per_pixel_fitnes_buffer            = new ComputeBuffer((int)pixel_count_in_image,                   sizeof(float)                      );          // this buffer has one entry per image pixel. So width*height
+        per_row_sum_buffer                 = new ComputeBuffer((int)Image_to_reproduce.height,              sizeof(float)                      );          // This will have one entry per row of the image. So as many as the height value of the render target. Each of these entries will hold the sum of that row
+        population_pool_fitness_buffer     = new ComputeBuffer((int)evolution_setting.populationPoolNumber, sizeof(float)                      );
+        population_accumlative_prob_buffer = new ComputeBuffer((int)evolution_setting.populationPoolNumber, sizeof(float)                      );          // You could combin this and the fitnes buffer together, I am keeping them seprated for the sake of debuging ease
+        second_gen_parents_ids_buffer      = new ComputeBuffer((int)evolution_setting.populationPoolNumber, sizeof(int)   * 2                  );          // ids (int) paris. Needs to change to smoething else if you have more than 2 parent
+        fittest_member_buffer              = new ComputeBuffer(1,                                           sizeof(float) + sizeof(int)        );          // This is a single value. Not sure how to bind it as random read write access without creating an entire buffer
 
 
         // -----------------------
         // Textures Initialization
-        active_texture_target = new RenderTexture((int)image_width, (int)image_height,
+        active_texture_target = new RenderTexture(Image_to_reproduce.width, Image_to_reproduce.height,
             0, RenderTextureFormat.ARGB32);
         active_texture_target.Create();
         compute_forged_in_render_texture = new RenderTexture(active_texture_target);
         compute_forged_in_render_texture.Create();
 
-        debug_texture = new RenderTexture((int)image_width, (int)image_height,
+        debug_texture = new RenderTexture(Image_to_reproduce.width, Image_to_reproduce.height,
             0, RenderTextureFormat.ARGB32);
         debug_texture.enableRandomWrite = true;
         debug_texture.Create();

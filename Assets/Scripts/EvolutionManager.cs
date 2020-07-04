@@ -12,37 +12,19 @@ public class EvolutionManager : MonoBehaviour
     [Header("Image")]
     public  Texture                ImageToReproduce;                          // This image is used for the evolution algo and is the ground truth
           
-    
-    [Header("Scale Settings")]
-    public  ScaleStage[]           stages;
 
-    [Header("Evelution Settings")]
-    public  uint                   populationPoolNumber;                      // larger population pool could lead to reducing number of generations required to get to the answer however increases the memory overhead
-    public  uint                   maximumNumberOfBrushStrokes;               // this controls how many brush strokes can be used to replicate the image aka how many genes a population has
-    public  Texture                brushTexture;                              // four textures in one texture. R, G, B and A each hold a texture of its own
-
-    public  bool                   blackAnwWhite;
-    public  float                  mutationChance = 0.01f;
-    public  float                  brushSizeLowerBound  = 0.1f;
-    public  float                  brushSizeHigherBound = 1.0f;
-
-    public  float                  hueWeight;                                 // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
-    public  float                  satWeight;                                 // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
-    public  float                  valWeight;                                 // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
-    public  float                  fitnessPowFactor;
+    public Evolution_Settings      evolution_settings;
+    public Fitness_Settings        fitness_settings;
+   
     [Header("Soft References")]
     public   Compute_Shaders        compute_shaders;                          // All the boiler plate code, binding and references for the compute shaders. Look in the comments in the struct for more info 
-
-    [Header("Debug")]
-    public Texture                 user_set_forged;                           // I used this to test if my fitness function works. In this texture I can insert a copy of the original which is slightly altered and see what value my fitness function gives me for that image
-    public bool                    turn_on_fitness_debug;
     
     private Material               rendering_material;                        // material used to actually render the brush strokes
     private Material               fittest_rendering_material;                // this material is used to draw the fittest member of the population at the end of the lop after all calculations are done
                                    
     private CommandBuffer          effect_command_buffer;                     // this command buffer encapsulates everything that happens in the effect
-   
     private Compute_Resources      compute_resources;                         // holds all the buffers and rendertargets. Look in the defination of the struct for more info and documentation
+   
 
     private Camera                 main_cam;
 
@@ -76,18 +58,18 @@ public class EvolutionManager : MonoBehaviour
         rendering_material = new Material(Shader.Find("Unlit/PopulationShader"));
         if (!rendering_material) Debug.LogError("Couldnt find the population shader");
 
-        rendering_material.SetTexture("_MainTex", brushTexture);
+        rendering_material.SetTexture("_MainTex", evolution_settings.brushTexture);
 
         fittest_rendering_material = new Material(Shader.Find("Unlit/FittestRenderShader"));
         if (!fittest_rendering_material) Debug.LogError("could not find the sahder for rendering the fittest population member");
 
-        fittest_rendering_material.SetInt("_genes_number_per_member", (int) maximumNumberOfBrushStrokes);
-        fittest_rendering_material.SetTexture("_MainTex", brushTexture);
+        fittest_rendering_material.SetInt("_genes_number_per_member", (int)evolution_settings.maximumNumberOfBrushStrokes);
+        fittest_rendering_material.SetTexture("_MainTex", evolution_settings.brushTexture);
 
         // ____________________________________________________________________________________________________
         // Compute Resources Initialization
 
-        compute_resources.Consruct_Buffers((uint) ImageToReproduce.width, (uint)ImageToReproduce.height, populationPoolNumber, maximumNumberOfBrushStrokes);
+        compute_resources.Consruct_Buffers(ImageToReproduce,evolution_settings);
 
         // ____________________________________________________________________________________________________
         // Command Buffer initialization
@@ -105,23 +87,7 @@ public class EvolutionManager : MonoBehaviour
         fittest_rendering_material.SetBuffer ("_population_pool",         compute_resources.population_pool_buffer);
         fittest_rendering_material.SetBuffer ("_fittest_member",          compute_resources.fittest_member_buffer);
 
-        compute_shaders.bind_population_pool_buffer                     (compute_resources.population_pool_buffer);
-        compute_shaders.bind_second_gen_buffer                          (compute_resources.second_gen_population_pool_buffer);
-        compute_shaders.bind_per_pixel_fitness_buffer                   (compute_resources.per_pixel_fitnes_buffer);
-        compute_shaders.bind_rows_sum_buffer                            (compute_resources.per_row_sum_buffer);
-        compute_shaders.bind_population_pool_fitness_buffer             (compute_resources.population_pool_fitness_buffer);
-        compute_shaders.bind_population_accumlative_probablities_buffer (compute_resources.population_accumlative_prob_buffer);
-        compute_shaders.bind_second_gen_parent_ids_buffer               (compute_resources.second_gen_parents_ids_buffer);
-        compute_shaders.bind_fittest_member_buffer                      (compute_resources.fittest_member_buffer);
-
-        compute_shaders.bind_original_texture(ImageToReproduce);
-        compute_shaders.bind_forged_texture  (compute_resources.compute_forged_in_render_texture);
-
-        if(turn_on_fitness_debug) compute_shaders.bind_forged_texture(user_set_forged);                                                        // Used for debuging porpuses. Passing on a user given forged to test the fitness function
-
-        compute_shaders.set_image_dimensions((uint) ImageToReproduce.width, (uint) ImageToReproduce.height);
-        compute_shaders.set_evolution_settings(populationPoolNumber, maximumNumberOfBrushStrokes);
-
+        compute_shaders.Bind_Compute_Resources(ImageToReproduce, compute_resources, evolution_settings);
 
         // ____________________________________________________________________________________________________
         // CPU Arrays initalization
@@ -129,13 +95,13 @@ public class EvolutionManager : MonoBehaviour
 
         // -----------------------
         // Population Pool first gen initializatiopn
-        int total_number_of_genes = (int)(populationPoolNumber * maximumNumberOfBrushStrokes);
+        int total_number_of_genes = (int)(evolution_settings.populationPoolNumber * evolution_settings.maximumNumberOfBrushStrokes);
         Genes[] initialPop = new Genes[total_number_of_genes];
 
-        if(!blackAnwWhite)
-        CPUSystems.InitatePopulationMember(ref initialPop, brushSizeLowerBound, brushSizeHigherBound);
+        if(!evolution_settings.blackAnwWhite)
+        CPUSystems.InitatePopulationMember(ref initialPop, evolution_settings.brushSizeLowerBound, evolution_settings.brushSizeHigherBound);
         else
-        CPUSystems.InitatePopulationMemberBW(ref initialPop, brushSizeLowerBound, brushSizeHigherBound);
+        CPUSystems.InitatePopulationMemberBW(ref initialPop, evolution_settings.brushSizeLowerBound, evolution_settings.brushSizeHigherBound);
 
         compute_resources.population_pool_buffer.SetData(initialPop);
         rendering_material.SetBuffer("_population_pool", compute_resources.population_pool_buffer);
@@ -165,17 +131,17 @@ public class EvolutionManager : MonoBehaviour
 
         uint shader_population_member_begining_index = 0;
 
-        for (int i = 0; i<populationPoolNumber; i++){
+        for (int i = 0; i< evolution_settings.populationPoolNumber; i++){
 
 
             effect_command_buffer.SetGlobalInt("_memember_begin_stride", (int)shader_population_member_begining_index);                              // This is used in the PopulationShader to sample the currect population member (brush stroke) from the population pool list. It is baisicly population_member_index * genes_number_per_population
-            shader_population_member_begining_index += maximumNumberOfBrushStrokes;                                                                  // add the genes number (stride) in every loop iteration instead of caculating  population_member_index * genes_number_per_population every time
+            shader_population_member_begining_index += evolution_settings.maximumNumberOfBrushStrokes;                                                                  // add the genes number (stride) in every loop iteration instead of caculating  population_member_index * genes_number_per_population every time
 
             // -----------------------
             // Draw Population Pool Member
             ClearAllRenderTargets(ref effect_command_buffer, true, true, Color.white);
             effect_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0, 
-                MeshTopology.Triangles, (int)maximumNumberOfBrushStrokes * 6);
+                MeshTopology.Triangles, (int)evolution_settings.maximumNumberOfBrushStrokes * 6);
 
             // -----------------------
             //Compute Fitness
@@ -214,18 +180,18 @@ public class EvolutionManager : MonoBehaviour
         ClearAllRenderTargets(ref effect_command_buffer, true, true, Color.white);
 
         effect_command_buffer.DrawProcedural(Matrix4x4.identity, fittest_rendering_material, 0,
-            MeshTopology.Triangles, (int) maximumNumberOfBrushStrokes * 6);
+            MeshTopology.Triangles, (int)evolution_settings.maximumNumberOfBrushStrokes * 6);
         effect_command_buffer.Blit(compute_resources.active_texture_target, BuiltinRenderTextureType.CameraTarget);
 
         //effect_command_buffer.DispatchCompute(compute_selection_functions, debug_hash_handel,
         //      ImageToReproduce.width / 8, ImageToReproduce.height / 8, 1);
         //effect_command_buffer.Blit(debug_texture, BuiltinRenderTextureType.CameraTarget);                                                   // used to debug how well the hashing works
 
-        if (populationPoolNumber % 16 != 0)
-            Debug.LogError("The population pool number is set to" + populationPoolNumber +
+        if (evolution_settings.populationPoolNumber % 16 != 0)
+            Debug.LogError("The population pool number is set to" + evolution_settings.populationPoolNumber +
              "Which is not multiple of 32. Either change this number or numThreads in the compute shader!");
 
-        effect_command_buffer.DispatchCompute(compute_shaders.compute_selection_functions, compute_shaders.parent_selection_handel, (int)populationPoolNumber / 16, 1, 1);
+        effect_command_buffer.DispatchCompute(compute_shaders.compute_selection_functions, compute_shaders.parent_selection_handel, (int)evolution_settings.populationPoolNumber / 16, 1, 1);
 
 
         if (total_number_of_genes % 128 != 0)
@@ -234,7 +200,7 @@ public class EvolutionManager : MonoBehaviour
 
         effect_command_buffer.DispatchCompute(compute_shaders.compute_selection_functions, compute_shaders.cross_over_handel, total_number_of_genes / 128, 1, 1);             // This stage takes the selected parents and combines their genes 
 
-        if(!blackAnwWhite)
+        if(!evolution_settings.blackAnwWhite)
             effect_command_buffer.DispatchCompute(compute_shaders.compute_selection_functions, compute_shaders.mutation_and_copy_handel, total_number_of_genes / 128, 1, 1);      // This copies the cross overed genes from second gen to the main buffer for rendering in next frame and also mutates some of them
         else
             effect_command_buffer.DispatchCompute(compute_shaders.compute_selection_functions, compute_shaders.mutation_and_copy_BW_handel, total_number_of_genes / 128, 1, 1);
@@ -291,16 +257,16 @@ public class EvolutionManager : MonoBehaviour
 
         generation_identifier++;
         compute_shaders.compute_selection_functions.SetInt  ("_generation_seed",     generation_identifier + Random.Range(0, 2147483647));                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
-        compute_shaders.compute_selection_functions.SetFloat("_scale_lower_bound",   brushSizeLowerBound);
-        compute_shaders.compute_selection_functions.SetFloat("_scale_higher_bound",  brushSizeHigherBound);
-        compute_shaders.compute_selection_functions.SetFloat("_mutation_rate",       mutationChance);
-        compute_shaders.compute_selection_functions.SetFloat("_fittness_pow_factor", fitnessPowFactor);
+        compute_shaders.compute_selection_functions.SetFloat("_scale_lower_bound",   evolution_settings.brushSizeLowerBound);
+        compute_shaders.compute_selection_functions.SetFloat("_scale_higher_bound",  evolution_settings.brushSizeHigherBound);
+        compute_shaders.compute_selection_functions.SetFloat("_mutation_rate",       evolution_settings.mutationChance);
+        compute_shaders.compute_selection_functions.SetFloat("_fittness_pow_factor", fitness_settings.fitnessPowFactor);
 
 
 
-        compute_shaders.compute_fitness_function.SetFloat("_hue_weight", hueWeight);
-        compute_shaders.compute_fitness_function.SetFloat("_sat_weight", satWeight);
-        compute_shaders.compute_fitness_function.SetFloat("_val_weight", valWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_hue_weight", fitness_settings.hueWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_sat_weight", fitness_settings.satWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_val_weight", fitness_settings.valWeight);
 
 
     }
@@ -350,7 +316,7 @@ public class EvolutionManager : MonoBehaviour
 
     void debug_cross_over()
     {
-        Genes[] second_gen = new Genes[maximumNumberOfBrushStrokes * populationPoolNumber];
+        Genes[] second_gen = new Genes[evolution_settings.maximumNumberOfBrushStrokes * evolution_settings.populationPoolNumber];
         compute_resources.second_gen_population_pool_buffer.GetData(second_gen);
 
         population_member_to_string(second_gen);
@@ -358,9 +324,9 @@ public class EvolutionManager : MonoBehaviour
 
     void debug_parent_selection()
     {
-        parentPair[] second_gen_parents_ids = new parentPair[populationPoolNumber];
+        parentPair[] second_gen_parents_ids = new parentPair[evolution_settings.populationPoolNumber];
         compute_resources.second_gen_parents_ids_buffer.GetData(second_gen_parents_ids);
-        for (int i = 0; i < populationPoolNumber; i++)
+        for (int i = 0; i < evolution_settings.populationPoolNumber; i++)
         {
             print(string.Format("second generation {0}, has the parents {1} and {2}", 
                 i, second_gen_parents_ids[i].parentX, second_gen_parents_ids[i].parentY));
@@ -370,9 +336,9 @@ public class EvolutionManager : MonoBehaviour
 
     void debug_fitness_to_probabilities_transformation()
     {
-        float[] accmulative_probabilities = new float[populationPoolNumber];
+        float[] accmulative_probabilities = new float[evolution_settings.populationPoolNumber];
         compute_resources.population_accumlative_prob_buffer.GetData(accmulative_probabilities);
-        for (int i = 0; i < populationPoolNumber; i++)
+        for (int i = 0; i < evolution_settings.populationPoolNumber; i++)
         {
             print(string.Format("population {0}, has the accumalative weighted probablity {1}", i, accmulative_probabilities[i]));
         }
@@ -387,10 +353,10 @@ public class EvolutionManager : MonoBehaviour
     /// </summary>
     void debug_population_member_fitness_value()
     {
-        float[] population_fitness_cpu_values = new float[populationPoolNumber];
+        float[] population_fitness_cpu_values = new float[evolution_settings.populationPoolNumber];
         compute_resources.population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
 
-        for (int i = 0; i < populationPoolNumber; i++)
+        for (int i = 0; i < evolution_settings.populationPoolNumber; i++)
         {
             print(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
         }
