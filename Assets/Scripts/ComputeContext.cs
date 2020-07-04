@@ -210,14 +210,10 @@ public class Compute_Resources                                               // 
             0, RenderTextureFormat.ARGB32);
         debug_texture.enableRandomWrite = true;
         debug_texture.Create();
-
-
-        if (stage_base)
-        {
-           clear_base = new RenderTexture(stage_base);
-           clear_base.Create();
-           Graphics.Blit(stage_base, clear_base);
-        }
+        
+        clear_base = new RenderTexture(stage_base);
+        clear_base.Create();
+        Graphics.Blit(stage_base, clear_base);
         
     }
 

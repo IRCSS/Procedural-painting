@@ -19,7 +19,7 @@ public class Evolution_Settings
     public  uint       maximumNumberOfBrushStrokes   = 64           ;            // this controls how many brush strokes can be used to replicate the image aka how many genes a population has
     public  Texture    brushTexture                                 ;            // four textures in one texture. R, G, B and A each hold a texture of its own
 
-    public  bool       blackAnwWhite                 = false        ;            // wether the image should be painted in black and white. Would be easier to paint
+   
     public  float      mutationChance                = 0.015f       ;            // this is the probablity of an individual gene mutating 
     public  float      brushSizeLowerBound           = 0.25f        ;            // lowest possible brush size that can appear
     public  float      brushSizeHigherBound          = 4.0f         ;            // biggest possible brush size that can appear. This value changes as more brushes are laid down. First bigger brush strokes are layed donw and on top of that smaller ones

@@ -163,13 +163,61 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: f24e7cb37df4aab49b8a6386ca276d97, type: 3}
-  one_stage:
-    evolution_settings:
+  ImageToReproduce: {fileID: 2800000, guid: 1dd75d2564851814d81f393cf27b3bdd, type: 3}
+  blackAnwWhite: 0
+  stages:
+  - evolution_settings:
       populationPoolNumber: 64
       maximumNumberOfBrushStrokes: 64
       brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
-      blackAnwWhite: 1
+      mutationChance: 0.015
+      brushSizeLowerBound: 0.25
+      brushSizeHigherBound: 1
+    fitness_settings:
+      hueWeight: 0.333
+      satWeight: 0.333
+      valWeight: 0.333
+      fitnessPowFactor: 2
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 64
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+      mutationChance: 0.015
+      brushSizeLowerBound: 0.25
+      brushSizeHigherBound: 2
+    fitness_settings:
+      hueWeight: 0.333
+      satWeight: 0.333
+      valWeight: 0.333
+      fitnessPowFactor: 2
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 64
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+      mutationChance: 0.015
+      brushSizeLowerBound: 0.25
+      brushSizeHigherBound: 3
+    fitness_settings:
+      hueWeight: 0.333
+      satWeight: 0.333
+      valWeight: 0.333
+      fitnessPowFactor: 2
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 64
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
       mutationChance: 0.015
       brushSizeLowerBound: 0.25
       brushSizeHigherBound: 4
@@ -198,6 +246,7 @@ MonoBehaviour:
     cross_over_handel: 0
     mutation_and_copy_handel: 0
     mutation_and_copy_BW_handel: 0
+  current_background: {fileID: 0}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

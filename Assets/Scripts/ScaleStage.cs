@@ -34,7 +34,7 @@ public class ScaleStage
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Constructor
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
-    public void initialise_stage(Texture original_image, RenderTexture clear_with_base, Compute_Shaders shaders, uint stage_id)
+    public void initialise_stage(Texture original_image, RenderTexture clear_with_base, Compute_Shaders shaders, bool is_black_white, uint stage_id)
     {
         // ____________________________________________________________________________________________________
         // Initializing Parameter passed from Evolution Manager
@@ -80,7 +80,7 @@ public class ScaleStage
         int total_number_of_genes = (int)(evolution_settings.populationPoolNumber * evolution_settings.maximumNumberOfBrushStrokes);
         Genes[] initialPop = new Genes[total_number_of_genes];
 
-        if(!evolution_settings.blackAnwWhite)
+        if(!is_black_white)
         CPUSystems.InitatePopulationMember(ref initialPop, evolution_settings.brushSizeLowerBound, 
             evolution_settings.brushSizeHigherBound);
         else
@@ -178,7 +178,7 @@ public class ScaleStage
         stage_command_buffer.DispatchCompute(compute_shaders.compute_selection_functions, 
             compute_shaders.cross_over_handel, total_number_of_genes / 128, 1, 1);
 
-        if (!evolution_settings.blackAnwWhite)
+        if (!is_black_white)
             stage_command_buffer.DispatchCompute(compute_shaders.compute_selection_functions,                                                  // This copies the cross overed genes from second gen to the main buffer for rendering in next frame and also mutates some of them
                 compute_shaders.mutation_and_copy_handel, total_number_of_genes / 128, 1, 1);     
         else
@@ -195,8 +195,9 @@ public class ScaleStage
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    public void deinitialize_stage()
+    public void deinitialize_stage(ref RenderTexture copy_result_in_to)
     {
+        Graphics.Blit(compute_resources.active_texture_target, copy_result_in_to);
         compute_resources.Destruct_Buffers();                                                                                                   // Call the destructor on the GPU buffers. This causes a reference decremeanting on the COM objects
         Camera.main.RemoveCommandBuffer(CameraEvent.AfterEverything, stage_command_buffer);                                                     // Removing the Command buffer from the camera so that this rendering doesnt happen anymore.
     }
@@ -250,10 +251,11 @@ public class ScaleStage
         //the barriers and syncing is done in unity. So keep an eye out
 
         cb.SetRenderTarget(compute_resources.compute_forged_in_render_texture);         // The texture which is used as input for the compute shader also needs to be cleared
-        cb.ClearRenderTarget(color, depth, c);               
+        cb.ClearRenderTarget(color, depth, c);
+
 
         cb.SetRenderTarget(compute_resources.active_texture_target);                    // make sure you end up with active_texture_target being the last bound render target
-        cb.ClearRenderTarget(color, depth, c);
+        cb.Blit(compute_resources.clear_base, compute_resources.active_texture_target);
     }
 
 
