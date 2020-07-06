@@ -163,20 +163,94 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: 1dd75d2564851814d81f393cf27b3bdd, type: 3}
-  blackAnwWhite: 0
+  ImageToReproduce: {fileID: 2800000, guid: 45cb863f24a9575418c33e1beba84a0a, type: 3}
+  blackAnwWhite: 1
   stages:
   - evolution_settings:
       populationPoolNumber: 64
       maximumNumberOfBrushStrokes: 64
       brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
-      mutationChance: 0.015
+      mutationChance: 0.05
+      brushSizeLowerBound: 0.2
+      brushSizeHigherBound: 0.1
+    fitness_settings:
+      colorTotalWeight: 1
+      gradientTotalWeight: 3
+      hueWeight: 0
+      satWeight: 0
+      valWeight: 1
+      fitnessPowFactor: 4
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 64
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+      mutationChance: 0.005
+      brushSizeLowerBound: 0.1
+      brushSizeHigherBound: 0.2
+    fitness_settings:
+      colorTotalWeight: 1
+      gradientTotalWeight: 1
+      hueWeight: 0
+      satWeight: 0
+      valWeight: 1
+      fitnessPowFactor: 2
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 64
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+      mutationChance: 0.005
+      brushSizeLowerBound: 0.2
+      brushSizeHigherBound: 0.5
+    fitness_settings:
+      colorTotalWeight: 1
+      gradientTotalWeight: 3
+      hueWeight: 0
+      satWeight: 0
+      valWeight: 1
+      fitnessPowFactor: 4
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 64
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+      mutationChance: 0.005
       brushSizeLowerBound: 0.25
       brushSizeHigherBound: 1
     fitness_settings:
-      hueWeight: 0.333
-      satWeight: 0.333
-      valWeight: 0.333
+      colorTotalWeight: 1
+      gradientTotalWeight: 1
+      hueWeight: 0
+      satWeight: 0
+      valWeight: 1
+      fitnessPowFactor: 4
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 64
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+      mutationChance: 0.005
+      brushSizeLowerBound: 0.25
+      brushSizeHigherBound: 1
+    fitness_settings:
+      colorTotalWeight: 1
+      gradientTotalWeight: 1
+      hueWeight: 0
+      satWeight: 0
+      valWeight: 1
       fitnessPowFactor: 2
     scale_settings:
       sigma: 0.1
@@ -186,46 +260,52 @@ MonoBehaviour:
       populationPoolNumber: 64
       maximumNumberOfBrushStrokes: 64
       brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
-      mutationChance: 0.015
+      mutationChance: 0.005
       brushSizeLowerBound: 0.25
+      brushSizeHigherBound: 0.5
+    fitness_settings:
+      colorTotalWeight: 1
+      gradientTotalWeight: 1
+      hueWeight: 0
+      satWeight: 0
+      valWeight: 1
+      fitnessPowFactor: 4
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 64
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+      mutationChance: 0.005
+      brushSizeLowerBound: 1
+      brushSizeHigherBound: 1.5
+    fitness_settings:
+      colorTotalWeight: 1
+      gradientTotalWeight: 1
+      hueWeight: 0
+      satWeight: 0
+      valWeight: 1
+      fitnessPowFactor: 4
+    scale_settings:
+      sigma: 0.1
+      gaussian_kernel_size: 16
+      sobel_step_size: 1
+  - evolution_settings:
+      populationPoolNumber: 64
+      maximumNumberOfBrushStrokes: 32
+      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+      mutationChance: 0.005
+      brushSizeLowerBound: 1
       brushSizeHigherBound: 2
     fitness_settings:
-      hueWeight: 0.333
-      satWeight: 0.333
-      valWeight: 0.333
-      fitnessPowFactor: 2
-    scale_settings:
-      sigma: 0.1
-      gaussian_kernel_size: 16
-      sobel_step_size: 1
-  - evolution_settings:
-      populationPoolNumber: 64
-      maximumNumberOfBrushStrokes: 64
-      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
-      mutationChance: 0.015
-      brushSizeLowerBound: 0.25
-      brushSizeHigherBound: 3
-    fitness_settings:
-      hueWeight: 0.333
-      satWeight: 0.333
-      valWeight: 0.333
-      fitnessPowFactor: 2
-    scale_settings:
-      sigma: 0.1
-      gaussian_kernel_size: 16
-      sobel_step_size: 1
-  - evolution_settings:
-      populationPoolNumber: 64
-      maximumNumberOfBrushStrokes: 64
-      brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
-      mutationChance: 0.015
-      brushSizeLowerBound: 0.25
-      brushSizeHigherBound: 4
-    fitness_settings:
-      hueWeight: 0.333
-      satWeight: 0.333
-      valWeight: 0.333
-      fitnessPowFactor: 2
+      colorTotalWeight: 1
+      gradientTotalWeight: 1
+      hueWeight: 0
+      satWeight: 0
+      valWeight: 1
+      fitnessPowFactor: 4
     scale_settings:
       sigma: 0.1
       gaussian_kernel_size: 16
@@ -236,7 +316,9 @@ MonoBehaviour:
     compute_selection_functions: {fileID: 7200000, guid: 9f091444f84ffd147a48ea7890b97224,
       type: 3}
     gaussian_compute: {fileID: 7200000, guid: 4e16609530cd942438ef34742b69dd5f, type: 3}
-    sobel_compute: {fileID: 7200000, guid: 059afd89258149446b7ec661f2d43913, type: 3}
+    sobel_compute_original: {fileID: 7200000, guid: 059afd89258149446b7ec661f2d43913,
+      type: 3}
+    sobel_compute_forged: {fileID: 0}
     per_pixel_fitness_kernel_handel: 0
     sun_rows_kernel_handel: 0
     sun_column_kernel_handel: 0
@@ -246,6 +328,8 @@ MonoBehaviour:
     cross_over_handel: 0
     mutation_and_copy_handel: 0
     mutation_and_copy_BW_handel: 0
+    sobel_handel_original: 0
+    sobel_handel_forged: 0
   current_background: {fileID: 0}
 --- !u!1 &705507993
 GameObject:

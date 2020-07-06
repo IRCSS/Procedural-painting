@@ -72,6 +72,15 @@ public class ScaleStage
         compute_shaders.Bind_Compute_Resources(ImageToReproduce, compute_resources, evolution_settings);
 
         // ____________________________________________________________________________________________________
+        // Procesing the orignal Image
+
+
+        compute_shaders.sobel_compute_original.Dispatch(compute_shaders.sobel_handel_original,                                                   // Apply sobel effect on the image once. This doesnt need to be on the loop and only happens once per stage
+            original_image.width / 32, original_image.height / 32, 1);
+
+        Graphics.Blit(compute_resources.sobel_out, compute_resources.original_image_gradient);                                                   // Copying over the results in a new read only texture. Random access resource types are not compatible with samplers. So I have to make this copy
+        compute_shaders.Bind_Compute_Resources(ImageToReproduce, compute_resources, evolution_settings);
+        // ____________________________________________________________________________________________________
         // CPU Arrays initalization
 
         // -----------------------
@@ -123,8 +132,20 @@ public class ScaleStage
                 MeshTopology.Triangles, (int)evolution_settings.maximumNumberOfBrushStrokes * 6);
 
             // -----------------------
-            //Compute Fitness
+            // Copy results for compute
+
             stage_command_buffer.CopyTexture(compute_resources.active_texture_target, compute_resources.compute_forged_in_render_texture);     // Without copying the rendering results to a new buffer, I was getting weird results after the rendering of the first population member. Seemed like unity unbinds this buffer since it thinks another operation is writing to it and binds a compeletly different buffer as input (auto generated one). The problem is gone if you copy the buffer 
+
+            // -----------------------
+            // Apply sobel effect 
+
+            stage_command_buffer.DispatchCompute(compute_shaders.sobel_compute_forged, compute_shaders.sobel_handel_forged,                    // This step calculates the gradient of each pixel in the forged image. This is then used for fitness fucntion
+                ImageToReproduce.width / 32, ImageToReproduce.height / 32, 1);
+
+            stage_command_buffer.CopyTexture(compute_resources.sobel_out, compute_resources.forged_image_gradient);
+
+            // -----------------------
+            //Compute Fitness
             stage_command_buffer.SetGlobalInt("_population_id_handel", i);                                                                     // the id is used in compute to know which of the populatioin members are currently being dealt with. 
 
             // thread groups are made up 32 in 32 threads. The image should be a multiply of 32. 
@@ -237,7 +258,11 @@ public class ScaleStage
         compute_shaders.compute_selection_functions.SetFloat("_mutation_rate",       evolution_settings.mutationChance);
         compute_shaders.compute_selection_functions.SetFloat("_fittness_pow_factor", fitness_settings.fitnessPowFactor);
 
+        compute_shaders.sobel_compute_original.SetInt("_kernel_size", scale_settings.sobel_step_size);
+        compute_shaders.sobel_compute_forged.  SetInt("_kernel_size", scale_settings.sobel_step_size);
 
+        compute_shaders.compute_fitness_function.SetFloat("_color_total_weight",    fitness_settings.colorTotalWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_gradient_total_weight", fitness_settings.gradientTotalWeight);
 
         compute_shaders.compute_fitness_function.SetFloat("_hue_weight", fitness_settings.hueWeight);
         compute_shaders.compute_fitness_function.SetFloat("_sat_weight", fitness_settings.satWeight);

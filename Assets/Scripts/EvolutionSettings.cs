@@ -40,6 +40,8 @@ public class Scale_Settings
 [System.Serializable]
 public class Fitness_Settings
 {
+    public  float      colorTotalWeight              = 1.0f         ;            // This is multiplied with all hsv channels fitness calculaiton and decides how much weight the entire color part of the fitness has. Can be any value, it will then be weighted based on how much the gradient is weighted
+    public  float      gradientTotalWeight           = 1.0f         ;            // How much should the gradient of the pixel be weighted for the total weight. Can be any positive value, will be normalized based on how hight the other values are
     public  float      hueWeight                     = 0.333f       ;            // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
     public  float      satWeight                     = 0.333f       ;            // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
     public  float      valWeight                     = 0.333f       ;            // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match

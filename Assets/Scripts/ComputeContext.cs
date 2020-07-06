@@ -13,7 +13,10 @@ public class Compute_Shaders
     public ComputeShader compute_fitness_function;                            // holds all code for the fitness function of the genetic evolution algo
     public ComputeShader compute_selection_functions;                         // this file contains the compute kernels for the adjusting the fitness to accmulative weighted probablities, selecting parents, cross over as well as mutation
     public ComputeShader gaussian_compute;
-    public ComputeShader sobel_compute;
+    public ComputeShader sobel_compute_original;
+
+    [HideInInspector]
+    public ComputeShader sobel_compute_forged;
     // ____________________________________________________________________________________________________
     // handel ides for each kernel
 
@@ -36,21 +39,28 @@ public class Compute_Shaders
     public int mutation_and_copy_handel;                                     // This copies over the second generation members to the main buffer to be rendered in the next frame and mutates some of the genes along the way
     [HideInInspector]
     public int mutation_and_copy_BW_handel;                                  // This copies over the second generation members to the main buffer to be rendered in the next frame and mutates some of the genes along the way. The mutates genes are colorless and only have value
-
+    [HideInInspector]
+    public int sobel_handel_original;                                        // This applies a sobel filter on an image. Which creates a per pixel gradient image
+    [HideInInspector]
+    public int sobel_handel_forged;                                          // same as above but for the forged image. This is another instance of the same compute shader
     // ____________________________________________________________________________________________________
     // CONSTRUCTOR: Populate the bindings
     public void Construct_Computes()
     {
+        sobel_compute_forged = Object.Instantiate(sobel_compute_original);                                  // We are going to need two instances of this compute shader so that we can staticly bind textures to it without the need of rebinding during the frame updating
 
-        per_pixel_fitness_kernel_handel = compute_fitness_function.FindKernel   ("CS_Fitness_Per_Pixel");
-        sun_rows_kernel_handel          = compute_fitness_function.FindKernel   ("CS_Sum_Rows");
-        sun_column_kernel_handel        = compute_fitness_function.FindKernel   ("CS_Sum_Column");
+        per_pixel_fitness_kernel_handel = compute_fitness_function.   FindKernel("CS_Fitness_Per_Pixel");
+        sun_rows_kernel_handel          = compute_fitness_function.   FindKernel("CS_Sum_Rows");
+        sun_column_kernel_handel        = compute_fitness_function.   FindKernel("CS_Sum_Column");
         trans_fitness_to_prob_handel    = compute_selection_functions.FindKernel("CS_transform_fitness_to_probability");
         debug_hash_handel               = compute_selection_functions.FindKernel("CS_debug_wang_hash");
         parent_selection_handel         = compute_selection_functions.FindKernel("CS_parent_selection");
         cross_over_handel               = compute_selection_functions.FindKernel("CS_cross_over");
         mutation_and_copy_handel        = compute_selection_functions.FindKernel("CS_mutation_and_copy");
         mutation_and_copy_BW_handel     = compute_selection_functions.FindKernel("CS_mutation_and_copy_BW");
+        sobel_handel_original           = sobel_compute_original.     FindKernel("Sobel");
+        sobel_handel_forged             = sobel_compute_forged.       FindKernel("Sobel");
+
     }
 
     
@@ -65,8 +75,11 @@ public class Compute_Shaders
         bind_second_gen_parent_ids_buffer               (compute_resources.second_gen_parents_ids_buffer);
         bind_fittest_member_buffer                      (compute_resources.fittest_member_buffer);
 
-        bind_original_texture(target_image);
-        bind_forged_texture  (compute_resources.compute_forged_in_render_texture);
+        bind_original_texture         (target_image);
+        bind_forged_texture           (compute_resources.compute_forged_in_render_texture);
+        bind_orignal_gradient_texture (compute_resources.original_image_gradient);
+        bind_forged_gradient_texture  (compute_resources.forged_image_gradient);
+        bind_sobel_out                (compute_resources.sobel_out);
 
         set_image_dimensions((uint)target_image.width, (uint)target_image.height);
         set_evolution_settings(evolution_settings.populationPoolNumber, evolution_settings.maximumNumberOfBrushStrokes);
@@ -116,25 +129,50 @@ public class Compute_Shaders
         bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel }, "_fittest_member", buffer);
     }
 
+
+    
+
     // ____________________________________________________________________________________________________
     // Bind Textures
 
     private void bind_original_texture(Texture original)
     {
         compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_original", original);
+        sobel_compute_original.SetTexture  (sobel_handel_original,           "_source",   original);
+    }
+    private void bind_sobel_out(Texture sobel_results)
+    {
+        sobel_compute_original.SetTexture  (sobel_handel_original,           "_result",   sobel_results);
+        sobel_compute_forged.SetTexture    (sobel_handel_forged,             "_result",   sobel_results);
+    }
+
+    private void bind_orignal_gradient_texture(Texture original_gradient)
+    {
+        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_original_gradient", original_gradient);
+    }
+    private void bind_forged_gradient_texture(Texture forged_gradient)
+    {
+        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged_gradient", forged_gradient);
     }
 
     private void bind_forged_texture(Texture forged)
     {
-        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged", forged);
+        sobel_compute_forged.SetTexture    (sobel_handel_forged,             "_source", forged);
+        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged",   forged);
+
+
     }
 
     private void set_image_dimensions(uint width, uint height)
     {
-        compute_fitness_function.SetInt       ("_image_width",      (int) width);
-        compute_fitness_function.SetInt       ("_image_height",     (int) height);
+        compute_fitness_function.   SetInt    ("_image_width",      (int) width);
+        compute_fitness_function.   SetInt    ("_image_height",     (int) height);
         compute_selection_functions.SetInt    ("_image_width",      (int) width);
         compute_selection_functions.SetInt    ("_image_height",     (int) height);
+        sobel_compute_original.     SetInt    ("_source_width",     (int) width);
+        sobel_compute_original.     SetInt    ("_source_height",    (int) height);
+        sobel_compute_forged.       SetInt    ("_source_width",     (int) width);
+        sobel_compute_forged.       SetInt    ("_source_height",    (int) height);
     }
 
     private void set_evolution_settings(uint population_size, uint genes_number_per_population)
@@ -180,7 +218,9 @@ public class Compute_Resources                                               // 
     public RenderTexture          compute_forged_in_render_texture;          // After rendering is done and written to active render texture, the results is coppied here, Without this copy, I was getting some weird issues with bindings and rebinding
     public RenderTexture          debug_texture;                             // texture used to visualize the compute calclulations. It is not always bound, you need to write code to bind it. I am just leaving it here so that I dont need to create a new texture every time for debuging
     public RenderTexture          clear_base;                                // This is the image used to clear the render target. After the first stage, this would be the basis which the second/ thirds etc stages would paint on
-
+    public RenderTexture          original_image_gradient;                   // This texture contains a version of the original image that has the sobel filter applied to it. This filter creates an image gradient which is used for calculating fitness of a pixel
+    public RenderTexture          forged_image_gradient;                     // same as above but for the forged attmpted by the AI
+    public RenderTexture          sobel_out;                                 // The sobel shader first writes its results to this. The reason why it doesnt directly write to the input of the fitness function is that this texture needs random access, which is not compatible with samplers.
     // ____________________________________________________________________________________________________
     // Constructor
     public void Consruct_Buffers(Texture Image_to_reproduce, RenderTexture stage_base, Evolution_Settings evolution_setting)
@@ -201,20 +241,50 @@ public class Compute_Resources                                               // 
         // -----------------------
         // Textures Initialization
         active_texture_target = new RenderTexture(Image_to_reproduce.width, Image_to_reproduce.height,
-            0, RenderTextureFormat.ARGB32);
+            0, RenderTextureFormat.ARGB32)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+        };
         active_texture_target.Create();
-        compute_forged_in_render_texture = new RenderTexture(active_texture_target);
+        compute_forged_in_render_texture = new RenderTexture(active_texture_target)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+        };
         compute_forged_in_render_texture.Create();
 
         debug_texture = new RenderTexture(Image_to_reproduce.width, Image_to_reproduce.height,
-            0, RenderTextureFormat.ARGB32);
-        debug_texture.enableRandomWrite = true;
+            0, RenderTextureFormat.ARGB32)
+        {
+            wrapMode          = TextureWrapMode.Clamp,
+            enableRandomWrite = true,
+        };
+        
         debug_texture.Create();
         
         clear_base = new RenderTexture(stage_base);
         clear_base.Create();
         Graphics.Blit(stage_base, clear_base);
-        
+
+        original_image_gradient = new RenderTexture(active_texture_target)
+        {
+            wrapMode          = TextureWrapMode.Clamp,
+        };
+        original_image_gradient.Create();
+
+
+        forged_image_gradient = new RenderTexture(active_texture_target)
+        {
+            wrapMode          = TextureWrapMode.Clamp,
+        };
+        forged_image_gradient.Create();
+
+        sobel_out = new RenderTexture(active_texture_target)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            enableRandomWrite = true,                   // This image is written to in compute shader as a random accesed resources
+        };
+
+        sobel_out.Create();
     }
 
 
@@ -236,6 +306,10 @@ public class Compute_Resources                                               // 
         compute_forged_in_render_texture.  Release();
         debug_texture.                     Release();
         clear_base.                        Release();
+
+        original_image_gradient.           Release();
+        forged_image_gradient.             Release();
+        sobel_out.                         Release();
 
     }
 
