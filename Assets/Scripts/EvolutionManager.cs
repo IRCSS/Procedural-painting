@@ -4,6 +4,12 @@ using UnityEngine.Rendering;
 using UnityEngine;
 
 
+[System.Serializable]
+public class StageSeries
+{
+    public int numberOfStagesInTheSeries;
+    public ScaleStage seriesSetting;
+}
 
 
 public class EvolutionManager : MonoBehaviour
@@ -17,7 +23,7 @@ public class EvolutionManager : MonoBehaviour
     public  Texture               ImageToReproduce;                          // This image is used for the evolution algo and is the ground truth
      public  bool                 blackAnwWhite;                             // wether the image should be painted in black and white. Would be easier to paint
     [Header("Stages")]
-    public ScaleStage[]           stages = new ScaleStage[4];
+    public  StageSeries[]         series      = new StageSeries[1];          
 
     [Header("Soft References")]
     public   Compute_Shaders      compute_shaders;                           // All the boiler plate code, binding and references for the compute shaders. Look in the comments in the struct for more info 
@@ -26,7 +32,8 @@ public class EvolutionManager : MonoBehaviour
     // Private
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    public RenderTexture         current_background;                         // This is the texture used to clear the background with. Each stage updates its newest advances in to this once iti s deintialized
+    private ScaleStage[]          stages;
+    private RenderTexture         current_background;                         // This is the texture used to clear the background with. Each stage updates its newest advances in to this once iti s deintialized
     private uint                  generation_identifier = 0;                 // This number specifies how many generations have already gone by. 
     private uint                  current_stage;
 
@@ -37,6 +44,21 @@ public class EvolutionManager : MonoBehaviour
     void Start()
     {
 
+
+        // ____________________________________________________________________________________________________
+        // Construct the scale stages
+        List<ScaleStage> temp = new List<ScaleStage>();
+
+        for(int i =0; i < series.Length; i++)
+        {
+            for(int j = 0; j< series[i].numberOfStagesInTheSeries; j++)
+            {
+                ScaleStage ss = new ScaleStage(series[i].seriesSetting);
+                temp.Add(ss);
+            }
+        }
+
+        stages = temp.ToArray();
 
         // ____________________________________________________________________________________________________
         // Camera Initialisation

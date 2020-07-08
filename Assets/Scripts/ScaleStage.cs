@@ -30,10 +30,28 @@ public class ScaleStage
     private Material               fittest_rendering_material;            // this material is used to draw the fittest member of the population at the end of the lop after all calculations are done
            
     private uint                   scale_stage_id;                        // This is the identifier for this scale stage. 
-    
+
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Constructor
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    public ScaleStage()                                                    // Default Constructor
+    {
+        evolution_settings = new Evolution_Settings  ();
+        fitness_settings   = new Fitness_Settings    ();
+        scale_settings     = new Scale_Settings      ();
+    }
+
+    public ScaleStage(ScaleStage other )                                   // Copy Constructor
+    {
+        evolution_settings = new Evolution_Settings  (other.evolution_settings);
+        fitness_settings   = new Fitness_Settings    (other.fitness_settings  );
+        scale_settings     = new Scale_Settings      (other.scale_settings    );
+    }
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // Initialisation
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
     public void initialise_stage(Texture original_image, RenderTexture clear_with_base, Compute_Shaders shaders, bool is_black_white, uint stage_id)
     {
         // ____________________________________________________________________________________________________
