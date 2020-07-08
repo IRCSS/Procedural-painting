@@ -163,18 +163,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 0}
-  blackAnwWhite: 0
+  ImageToReproduce: {fileID: 2800000, guid: 45cb863f24a9575418c33e1beba84a0a, type: 3}
+  blackAnwWhite: 1
   series:
-  - numberOfStagesInTheSeries: 0
+  - numberOfStagesInTheSeries: 6
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 64
         maximumNumberOfBrushStrokes: 64
-        brushTexture: {fileID: 0}
-        mutationChance: 0.015
-        brushSizeLowerBound: 0.25
-        brushSizeHigherBound: 4
+        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        mutationChance: 0.005
+        brushSizeLowerBound: 0.1
+        brushSizeHigherBound: 1
       fitness_settings:
         colorTotalWeight: 1
         gradientTotalWeight: 1
@@ -186,7 +186,6 @@ MonoBehaviour:
         sigma: 0.1
         gaussian_kernel_size: 16
         sobel_step_size: 1
-  stages: []
   compute_shaders:
     compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
       type: 3}

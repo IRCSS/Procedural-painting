@@ -3,6 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+
+public struct FitnessData
+{
+    public float  instantaneous;
+    public float  firstDerivative;
+    public float  secondDerivative;
+
+    private float last_instantaneous;
+    private float last_firstDerivative;
+    private float last_secondDerivative;
+
+}
+
 [System.Serializable]
 public class ScaleStage
 {
@@ -253,6 +266,8 @@ public class ScaleStage
         MemberIDFitnessPair[] fittestMember = new MemberIDFitnessPair[1];
 
         compute_resources.fittest_member_buffer.GetData(fittestMember);
+
+
 
         // -----------------------
         // Print out statistics
