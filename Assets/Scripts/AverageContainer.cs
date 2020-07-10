@@ -12,6 +12,7 @@ public class AverageContainer                     // combination of a ring buffe
 
     public AverageContainer(int size)
     {
+        numberOfFilledElements = 0;
         length = size;
         index  = 0;
         sum    = 0;
@@ -21,7 +22,7 @@ public class AverageContainer                     // combination of a ring buffe
 
     public float GetAverage()
     {
-        return sum / (float)numberOfFilledElements;
+        return sum / Mathf.Max(1, (float)numberOfFilledElements); // avoid division by zero
     }
 
     public void Add(float member)
@@ -30,6 +31,7 @@ public class AverageContainer                     // combination of a ring buffe
         sum = sum + member;                // instead add the new value. This is so that I dont have to sum up the members each time an average is requested
         values[index] = member;            // replace the new member with the oldest entry
         numberOfFilledElements = Mathf.Min(length, numberOfFilledElements + 1 );
+        IncrementIndex();
     }
 
     private void IncrementIndex()           // implements the ring allocater type of behaviour

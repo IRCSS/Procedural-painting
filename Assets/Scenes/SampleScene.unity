@@ -163,18 +163,58 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: 45cb863f24a9575418c33e1beba84a0a, type: 3}
-  blackAnwWhite: 1
+  ImageToReproduce: {fileID: 2800000, guid: a1996a5ccd8181248bf4cf9842ba06b9, type: 3}
+  blackAnwWhite: 0
   series:
-  - numberOfStagesInTheSeries: 6
+  - numberOfStagesInTheSeries: 40
     seriesSetting:
       evolution_settings:
-        populationPoolNumber: 64
-        maximumNumberOfBrushStrokes: 64
+        populationPoolNumber: 128
+        maximumNumberOfBrushStrokes: 32
         brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
-        mutationChance: 0.005
+        mutationChance: 0.01
         brushSizeLowerBound: 0.1
-        brushSizeHigherBound: 1
+        brushSizeHigherBound: 0.5
+      fitness_settings:
+        colorTotalWeight: 1
+        gradientTotalWeight: 1
+        hueWeight: 0.333
+        satWeight: 0.333
+        valWeight: 0.333
+        fitnessPowFactor: 4
+      scale_settings:
+        sigma: 0.1
+        gaussian_kernel_size: 16
+        sobel_step_size: 1
+  - numberOfStagesInTheSeries: 5
+    seriesSetting:
+      evolution_settings:
+        populationPoolNumber: 128
+        maximumNumberOfBrushStrokes: 32
+        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        mutationChance: 0.01
+        brushSizeLowerBound: 0.4
+        brushSizeHigherBound: 0.5
+      fitness_settings:
+        colorTotalWeight: 1
+        gradientTotalWeight: 1
+        hueWeight: 0.333
+        satWeight: 0.333
+        valWeight: 0.333
+        fitnessPowFactor: 4
+      scale_settings:
+        sigma: 0.1
+        gaussian_kernel_size: 16
+        sobel_step_size: 1
+  - numberOfStagesInTheSeries: 1
+    seriesSetting:
+      evolution_settings:
+        populationPoolNumber: 128
+        maximumNumberOfBrushStrokes: 32
+        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        mutationChance: 0.01
+        brushSizeLowerBound: 1
+        brushSizeHigherBound: 3
       fitness_settings:
         colorTotalWeight: 1
         gradientTotalWeight: 1

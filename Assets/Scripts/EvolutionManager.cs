@@ -95,9 +95,11 @@ public class EvolutionManager : MonoBehaviour
     {
 
         generation_identifier++;
-        stages[current_stage].update_stage(generation_identifier);
+        bool isStuckInLocalMinima = stages[current_stage].update_stage(generation_identifier);
 
-        if (Input.GetKeyDown(KeyCode.N))
+        
+
+        if ((Input.GetKeyDown(KeyCode.N) || isStuckInLocalMinima) && current_stage>0)
         {
             stages[current_stage].deinitialize_stage(ref current_background);
             current_stage--;

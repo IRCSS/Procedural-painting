@@ -20,6 +20,6 @@ public struct PopulationMember
 
 public struct MemberIDFitnessPair
 {
-    public uint memberID;
+    public uint  memberID;
     public float memberFitness;
 };

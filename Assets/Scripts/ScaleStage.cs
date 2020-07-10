@@ -4,15 +4,59 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 
-public struct FitnessData
+public class FitnessData
 {
-    public float  instantaneous;
-    public float  firstDerivative;
-    public float  secondDerivative;
+    private float                  instantaneous;
+    private float                  firstDerivative;
+    private float                  secondDerivative;
+                                   
+    private float                  last_instantaneous;
+    private float                  last_firstDerivative;
 
-    private float last_instantaneous;
-    private float last_firstDerivative;
-    private float last_secondDerivative;
+    private AverageContainer       average_fitness;                       // average of the instantanous fitness of the fitest member of the population
+    private AverageContainer       average_fitness_dt;                    // average of the change of the fitness over time. First derivatve
+    private AverageContainer       average_ftiness_dt2;                   // average of the change of the change of the fitness over time. Second derivative
+
+    public bool IsInMinima()
+    {
+        return (average_fitness_dt.GetAverage() < 0.000001f);
+    }
+
+    public FitnessData ()
+    {
+        instantaneous        =   0.0f                       ;
+        firstDerivative      =   0.0f                       ;
+        secondDerivative     =   0.0f                       ;   
+        last_firstDerivative =   0.0f                       ;
+        last_instantaneous   =   0.0f                       ;
+        average_fitness      =   new AverageContainer(600)  ;     
+        average_fitness_dt   =   new AverageContainer(600)  ;  
+        average_ftiness_dt2  =   new AverageContainer(600)  ; 
+    }
+
+    public void Update(float current_fitness)
+    {
+        instantaneous    = current_fitness;
+        firstDerivative  = instantaneous   - last_instantaneous;
+        secondDerivative = firstDerivative - last_firstDerivative;
+
+        average_fitness    .Add(instantaneous);
+        average_fitness_dt .Add(firstDerivative);
+        average_ftiness_dt2.Add(secondDerivative);
+
+        last_instantaneous   = instantaneous;
+        last_firstDerivative = firstDerivative;
+    }
+
+    public void Print()
+    {
+        Debug.Log(string.Format("Averaged fitness is: {0}, " +
+            "Average Fitness first derivative is: {1}, " +
+            "Average Fitness second derivative is: {2}", 
+            average_fitness.GetAverage(), 
+            average_fitness_dt.GetAverage(), 
+            average_ftiness_dt2.GetAverage()));
+    }
 
 }
 
@@ -43,6 +87,8 @@ public class ScaleStage
     private Material               fittest_rendering_material;            // this material is used to draw the fittest member of the population at the end of the lop after all calculations are done
            
     private uint                   scale_stage_id;                        // This is the identifier for this scale stage. 
+    
+    private FitnessData            fitness_data;                          // container holding all fitness info
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Constructor
@@ -67,6 +113,9 @@ public class ScaleStage
 
     public void initialise_stage(Texture original_image, RenderTexture clear_with_base, Compute_Shaders shaders, bool is_black_white, uint stage_id)
     {
+
+        fitness_data = new FitnessData();
+
         // ____________________________________________________________________________________________________
         // Initializing Parameter passed from Evolution Manager
 
@@ -250,8 +299,9 @@ public class ScaleStage
     public void deinitialize_stage(ref RenderTexture copy_result_in_to)
     {
         Graphics.Blit(compute_resources.active_texture_target, copy_result_in_to);
-        compute_resources.Destruct_Buffers();                                                                                                   // Call the destructor on the GPU buffers. This causes a reference decremeanting on the COM objects
+        RenderTexture.active = null;
         Camera.main.RemoveCommandBuffer(CameraEvent.AfterEverything, stage_command_buffer);                                                     // Removing the Command buffer from the camera so that this rendering doesnt happen anymore.
+        compute_resources.Destruct_Buffers();                                                                                                   // Call the destructor on the GPU buffers. This causes a reference decremeanting on the COM objects
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -259,7 +309,7 @@ public class ScaleStage
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-    public void update_stage(uint generation_id)
+    public bool update_stage(uint generation_id)
     {
         UpdateBalancingParameters(generation_id);
 
@@ -267,13 +317,18 @@ public class ScaleStage
 
         compute_resources.fittest_member_buffer.GetData(fittestMember);
 
-
+        fitness_data.Update(fittestMember[0].memberFitness);
 
         // -----------------------
         // Print out statistics
 
         Debug.Log(string.Format("Current total Generation {0}, Current Stage , {1}, current fittest member is: {2} with a fittness value of {3}",
             generation_id, scale_stage_id, fittestMember[0].memberID, fittestMember[0].memberFitness));
+
+
+        fitness_data.Print();
+
+        return fitness_data.IsInMinima();
     }
 
 
