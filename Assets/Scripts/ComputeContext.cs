@@ -43,6 +43,11 @@ public class Compute_Shaders
     public int sobel_handel_original;                                        // This applies a sobel filter on an image. Which creates a per pixel gradient image
     [HideInInspector]
     public int sobel_handel_forged;                                          // same as above but for the forged image. This is another instance of the same compute shader
+    [HideInInspector]
+    public int gaussian_horizontal_handel;
+    [HideInInspector]
+    public int gaussian_vertical_handel;
+
     // ____________________________________________________________________________________________________
     // CONSTRUCTOR: Populate the bindings
     public void Construct_Computes()
@@ -60,6 +65,8 @@ public class Compute_Shaders
         mutation_and_copy_BW_handel     = compute_selection_functions.FindKernel("CS_mutation_and_copy_BW");
         sobel_handel_original           = sobel_compute_original.     FindKernel("Sobel");
         sobel_handel_forged             = sobel_compute_forged.       FindKernel("Sobel");
+        gaussian_horizontal_handel      = gaussian_compute.           FindKernel("CS_gaussian_horizontal");
+        gaussian_vertical_handel        = gaussian_compute.           FindKernel("CS_gaussian_vertical");
 
     }
 
@@ -80,6 +87,8 @@ public class Compute_Shaders
         bind_orignal_gradient_texture (compute_resources.original_image_gradient);
         bind_forged_gradient_texture  (compute_resources.forged_image_gradient);
         bind_sobel_out                (compute_resources.sobel_out);
+        bind_original_blured          (compute_resources.original_image_blured);
+        bind_gaussian_out             (compute_resources.gaussian_out);
 
         set_image_dimensions((uint)target_image.width, (uint)target_image.height);
         set_evolution_settings(evolution_settings.populationPoolNumber, evolution_settings.maximumNumberOfBrushStrokes);
@@ -135,10 +144,24 @@ public class Compute_Shaders
     // ____________________________________________________________________________________________________
     // Bind Textures
 
+    private void bind_original_blured(Texture original_blured)
+    {
+        gaussian_compute.SetTexture      (gaussian_vertical_handel, "_vertical_source", original_blured); // the result of the horizontal pass is copied over to the original_blur texture
+        sobel_compute_original.SetTexture(sobel_handel_original,    "_source",          original_blured);
+    }
+
+    private void bind_gaussian_out(Texture gaussian_out)
+    {
+        gaussian_compute.SetTexture(gaussian_horizontal_handel, "_horizontal_results", gaussian_out);
+        gaussian_compute.SetTexture(gaussian_vertical_handel,   "_vertical_results",   gaussian_out);
+    }
+
+
     private void bind_original_texture(Texture original)
     {
-        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_original", original);
-        sobel_compute_original.SetTexture  (sobel_handel_original,           "_source",   original);
+        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_original",          original);
+        gaussian_compute.SetTexture        (gaussian_horizontal_handel,      "_horizontal_source", original);
+
     }
     private void bind_sobel_out(Texture sobel_results)
     {
@@ -157,7 +180,7 @@ public class Compute_Shaders
 
     private void bind_forged_texture(Texture forged)
     {
-        sobel_compute_forged.SetTexture    (sobel_handel_forged,             "_source", forged);
+        sobel_compute_forged.SetTexture    (sobel_handel_forged,             "_source",   forged);
         compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged",   forged);
 
 
@@ -165,14 +188,16 @@ public class Compute_Shaders
 
     private void set_image_dimensions(uint width, uint height)
     {
-        compute_fitness_function.   SetInt    ("_image_width",      (int) width);
+        compute_fitness_function.   SetInt    ("_image_width",      (int) width) ;
         compute_fitness_function.   SetInt    ("_image_height",     (int) height);
-        compute_selection_functions.SetInt    ("_image_width",      (int) width);
+        compute_selection_functions.SetInt    ("_image_width",      (int) width) ;
         compute_selection_functions.SetInt    ("_image_height",     (int) height);
-        sobel_compute_original.     SetInt    ("_source_width",     (int) width);
+        sobel_compute_original.     SetInt    ("_source_width",     (int) width) ;
         sobel_compute_original.     SetInt    ("_source_height",    (int) height);
-        sobel_compute_forged.       SetInt    ("_source_width",     (int) width);
+        sobel_compute_forged.       SetInt    ("_source_width",     (int) width) ;
         sobel_compute_forged.       SetInt    ("_source_height",    (int) height);
+        gaussian_compute.           SetInt    ("_source_width",     (int) width) ;
+        gaussian_compute.           SetInt    ("_source_height",    (int) height);
     }
 
     private void set_evolution_settings(uint population_size, uint genes_number_per_population)
@@ -218,9 +243,11 @@ public class Compute_Resources                                               // 
     public RenderTexture          compute_forged_in_render_texture;          // After rendering is done and written to active render texture, the results is coppied here, Without this copy, I was getting some weird issues with bindings and rebinding
     public RenderTexture          debug_texture;                             // texture used to visualize the compute calclulations. It is not always bound, you need to write code to bind it. I am just leaving it here so that I dont need to create a new texture every time for debuging
     public RenderTexture          clear_base;                                // This is the image used to clear the render target. After the first stage, this would be the basis which the second/ thirds etc stages would paint on
+    public RenderTexture          original_image_blured;
     public RenderTexture          original_image_gradient;                   // This texture contains a version of the original image that has the sobel filter applied to it. This filter creates an image gradient which is used for calculating fitness of a pixel
     public RenderTexture          forged_image_gradient;                     // same as above but for the forged attmpted by the AI
     public RenderTexture          sobel_out;                                 // The sobel shader first writes its results to this. The reason why it doesnt directly write to the input of the fitness function is that this texture needs random access, which is not compatible with samplers.
+    public RenderTexture          gaussian_out;
     // ____________________________________________________________________________________________________
     // Constructor
     public void Consruct_Buffers(Texture Image_to_reproduce, RenderTexture stage_base, Evolution_Settings evolution_setting)
@@ -271,6 +298,12 @@ public class Compute_Resources                                               // 
         };
         original_image_gradient.Create();
 
+        original_image_blured = new RenderTexture(active_texture_target)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+        };
+
+        original_image_blured.Create();
 
         forged_image_gradient = new RenderTexture(active_texture_target)
         {
@@ -285,6 +318,16 @@ public class Compute_Resources                                               // 
         };
 
         sobel_out.Create();
+
+        gaussian_out = new RenderTexture(active_texture_target)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            enableRandomWrite = true,                   // This image is written to in compute shader as a random accesed resources
+        };
+
+        gaussian_out.Create();
+
+
     }
 
 
@@ -307,9 +350,11 @@ public class Compute_Resources                                               // 
         debug_texture.                     Release();
         clear_base.                        Release();
 
+        original_image_blured.             Release();
         original_image_gradient.           Release();
         forged_image_gradient.             Release();
         sobel_out.                         Release();
+        gaussian_out.                      Release();
 
     }
 

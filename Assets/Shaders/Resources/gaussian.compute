@@ -73,12 +73,12 @@ void CS_gaussian_vertical(uint3 id : SV_DispatchThreadID)
 
     float3 pixel_value = float3(0., 0., 0.);
 
-    float2 step = float2(1.0 / _source_width, 1.0 / _source_height);
+    float2 step       = float2(1.0 / _source_width, 1.0 / _source_height);
     float2 texture_uv = float2(id.x * step.x, id.y * step.y);
 
     int    range = (int)((_kernel_size - 1 / 2));
 
-    float  sum = 0.0f;
+    float  sum   = 0.0f;
     for (int y = -range; y <= range; ++y)
     {
         float gaus_factor = gaussian(y);

@@ -154,6 +154,14 @@ public class ScaleStage
         // ____________________________________________________________________________________________________
         // Procesing the orignal Image
 
+        compute_shaders.gaussian_compute.Dispatch(compute_shaders.gaussian_horizontal_handel,
+            original_image.width / 8, original_image.height / 8, 1);
+
+        Graphics.Blit(compute_resources.gaussian_out, compute_resources.original_image_blured);
+
+        compute_shaders.gaussian_compute.Dispatch(compute_shaders.gaussian_vertical_handel,
+            original_image.width / 8, original_image.height / 8, 1);
+        Graphics.Blit(compute_resources.gaussian_out, compute_resources.original_image_blured);
 
         compute_shaders.sobel_compute_original.Dispatch(compute_shaders.sobel_handel_original,                                                   // Apply sobel effect on the image once. This doesnt need to be on the loop and only happens once per stage
             original_image.width / 32, original_image.height / 32, 1);
@@ -349,6 +357,9 @@ public class ScaleStage
         compute_shaders.sobel_compute_original.SetInt("_kernel_size", scale_settings.sobel_step_size);
         compute_shaders.sobel_compute_forged.  SetInt("_kernel_size", scale_settings.sobel_step_size);
 
+        compute_shaders.gaussian_compute.      SetInt    ("_kernel_size",           scale_settings.gaussian_kernel_size);
+        compute_shaders.gaussian_compute.      SetFloat  ("_gaussian_sigma",        scale_settings.sigma);
+        
         compute_shaders.compute_fitness_function.SetFloat("_color_total_weight",    fitness_settings.colorTotalWeight);
         compute_shaders.compute_fitness_function.SetFloat("_gradient_total_weight", fitness_settings.gradientTotalWeight);
 

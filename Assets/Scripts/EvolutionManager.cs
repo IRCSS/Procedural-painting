@@ -34,7 +34,7 @@ public class EvolutionManager : MonoBehaviour
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     private ScaleStage[]          stages;
-    private RenderTexture         current_background;                         // This is the texture used to clear the background with. Each stage updates its newest advances in to this once iti s deintialized
+    private RenderTexture         current_background;                        // This is the texture used to clear the background with. Each stage updates its newest advances in to this once iti s deintialized
     private uint                  generation_identifier = 0;                 // This number specifies how many generations have already gone by. 
     private uint                  current_stage;
 

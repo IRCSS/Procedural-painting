@@ -50,7 +50,7 @@ public class Evolution_Settings
 public class Scale_Settings
 {
     public float       sigma                         = 0.1f         ;            // standard deviation of the gaussian filter, which controls the weight of each sample in the averaging// standard deviation of the gaussian filter
-    public float       gaussian_kernel_size          = 16           ;            // large kernel size create better quality and more blur with cost of performance. bigger kernel -> more samples 
+    public int         gaussian_kernel_size          = 16           ;            // large kernel size create better quality and more blur with cost of performance. bigger kernel -> more samples 
     public int         sobel_step_size               = 1            ;            // how large is the step to left and right for samples use to measure image gradient
 
     public Scale_Settings()                          
