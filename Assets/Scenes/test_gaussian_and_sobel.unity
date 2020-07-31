@@ -310,6 +310,6 @@ MonoBehaviour:
   Source: {fileID: 2800000, guid: f98ef99889dce1b4085847b2fbaba518, type: 3}
   gaussian_compute: {fileID: 7200000, guid: 4e16609530cd942438ef34742b69dd5f, type: 3}
   sobel_compute: {fileID: 7200000, guid: 059afd89258149446b7ec661f2d43913, type: 3}
-  kernelSize: 64
-  sigma: 0
-  sobelStep: 1
+  kernelSize: 4
+  sigma: 16
+  sobelStep: 4

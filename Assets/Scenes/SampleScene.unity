@@ -183,9 +183,9 @@ MonoBehaviour:
         valWeight: 0.333
         fitnessPowFactor: 4
       scale_settings:
-        sigma: 0.1
-        gaussian_kernel_size: 16
-        sobel_step_size: 1
+        sigma: 16
+        gaussian_kernel_size: 4
+        sobel_step_size: 4
   - numberOfStagesInTheSeries: 10
     seriesSetting:
       evolution_settings:
@@ -203,9 +203,9 @@ MonoBehaviour:
         valWeight: 0.333
         fitnessPowFactor: 4
       scale_settings:
-        sigma: 0.1
-        gaussian_kernel_size: 16
-        sobel_step_size: 1
+        sigma: 16
+        gaussian_kernel_size: 8
+        sobel_step_size: 8
   - numberOfStagesInTheSeries: 10
     seriesSetting:
       evolution_settings:
@@ -223,10 +223,10 @@ MonoBehaviour:
         valWeight: 0.333
         fitnessPowFactor: 4
       scale_settings:
-        sigma: 0.1
+        sigma: 16
         gaussian_kernel_size: 16
-        sobel_step_size: 1
-  - numberOfStagesInTheSeries: 5
+        sobel_step_size: 16
+  - numberOfStagesInTheSeries: 2
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
@@ -244,8 +244,8 @@ MonoBehaviour:
         fitnessPowFactor: 4
       scale_settings:
         sigma: 16
-        gaussian_kernel_size: 16
-        sobel_step_size: 16
+        gaussian_kernel_size: 32
+        sobel_step_size: 32
   compute_shaders:
     compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
       type: 3}

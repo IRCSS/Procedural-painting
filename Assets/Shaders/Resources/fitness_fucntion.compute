@@ -76,7 +76,7 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 
 
     float3 origina_gradient = _original_gradient.SampleLevel(sampler_original_gradient, texutre_coordinates, 0).xyz;
-    float3 forged_gradient  = _forged_gradient.  SampleLevel(sampler_forged_gradient, texutre_coordinates, 0).xyz;
+    //float3 forged_gradient  = _forged_gradient.  SampleLevel(sampler_forged_gradient, texutre_coordinates, 0).xyz;
 
     float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0).xyz;
            //original_color = RGBtoHCV(original_color);
@@ -85,15 +85,15 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
            //forged_color   = RGBtoHCV(forged_color);
 
     float3 fittness_color    = 1. - saturate(abs(original_color - forged_color)) ;
-    float3 fittness_gradient = 1. - saturate(abs(origina_gradient - forged_gradient));
+    //float3 fittness_gradient = 1. - saturate(abs(origina_gradient - forged_gradient));
 
     int   structured_buffer_ID = texture_pixel_to_structured_buffer_ID(id.xy); 
     float maximum_fitness      = (_hue_weight + _sat_weight + _val_weight)*_color_total_weight           // Dividing the score of each pixel by the maximum potential normalize it between 0-1 which means the fitness of the entire image is a nice represnetative percentage. This is only doable if the pixels are homegenouse on their maximum fitness, which is the case here.
-                                 + (3*_gradient_total_weight);
+                                 ;
     
     _per_pixel_fitness_buffer[structured_buffer_ID] = 
         (((fittness_color.x *_hue_weight + fittness_color.y *_sat_weight + fittness_color.z*_val_weight) * _color_total_weight) 
-            + ((fittness_gradient.x+ fittness_gradient.y+ fittness_gradient.z)* _gradient_total_weight))
+           * origina_gradient)
         / maximum_fitness;
 
    // int2 texture_pixel = structured_buffer_id_to_texture_pixel(structured_buffer_ID);                  // Debug used to figure out what I have written 
