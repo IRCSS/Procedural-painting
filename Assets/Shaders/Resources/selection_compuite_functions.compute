@@ -40,7 +40,7 @@ float                        _fittness_pow_factor;
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_normalize_population_probabilities
 
-StructuredBuffer <float>                   _population_fitness_array;
+StructuredBuffer <float2>                  _population_fitness_array;
 RWStructuredBuffer<MemberIDFitnessPair>    _fittest_member;                                           // this structured buffer only has one member. It is a single int. I am sure there is a way to do this with a groupshared global int, and still read it on the CPU, however since I have to figure out how to do that within unity API I will just use a tiny structured buffer with one member
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_wang_hash
@@ -153,7 +153,7 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
     float lowest_fitness   = 1000000000.0;
     for (uint i = 0; i < _population_pool_size; i++) {
 
-        float f = _population_fitness_array[i];
+        float f = _population_fitness_array[i].x;
 
         if(f > highest_fitness)                                              // this finds out which member has the highest fitness. This is used for visualisation at the end of the render loop, the fittest member is redrawn-
         {
@@ -168,11 +168,11 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
     }
 
     _fittest_member[0].memberID      = m_fittest_member;
-    _fittest_member[0].memberFitness = highest_fitness/ (_image_width * _image_height);
+    _fittest_member[0].memberFitness = highest_fitness/*/ (_population_fitness_array[i].y)*/;
 
     for (uint k = 0; k < _population_pool_size; k++) 
     {
-        total_sum  += pow(inverse_lerp(_population_fitness_array[k], lowest_fitness, highest_fitness), _fittness_pow_factor);
+        total_sum  += pow(inverse_lerp(_population_fitness_array[k].x, lowest_fitness, highest_fitness), _fittness_pow_factor);
         _population_accumlative_probablities_array[k] = total_sum;                                     // since I am using only one thread, I dont have to worry about writing to the same cacheline I am reading from and false sharing. 
     }
 

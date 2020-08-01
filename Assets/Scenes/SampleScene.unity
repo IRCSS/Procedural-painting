@@ -163,14 +163,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: 45cb863f24a9575418c33e1beba84a0a, type: 3}
-  blackAnwWhite: 1
+  ImageToReproduce: {fileID: 2800000, guid: 5ef189f03754d704a9f5b4b2e4a68b62, type: 3}
+  blackAnwWhite: 0
   series:
-  - numberOfStagesInTheSeries: 50
+  - numberOfStagesInTheSeries: 4
     seriesSetting:
       evolution_settings:
-        populationPoolNumber: 16
-        maximumNumberOfBrushStrokes: 256
+        populationPoolNumber: 128
+        maximumNumberOfBrushStrokes: 32
         brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
         mutationChance: 0.01
         brushSizeLowerBound: 0.1
@@ -184,9 +184,9 @@ MonoBehaviour:
         fitnessPowFactor: 4
       scale_settings:
         sigma: 16
-        gaussian_kernel_size: 4
-        sobel_step_size: 4
-  - numberOfStagesInTheSeries: 10
+        gaussian_kernel_size: 8
+        sobel_step_size: 8
+  - numberOfStagesInTheSeries: 3
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
@@ -206,7 +206,7 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 8
         sobel_step_size: 8
-  - numberOfStagesInTheSeries: 10
+  - numberOfStagesInTheSeries: 3
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
