@@ -1,0 +1,80 @@
+﻿#pragma kernel CS_Construct_Position_Domain
+#pragma kernel CS_Debug_Position_Domain
+
+// ----------------------------------------------------------------------------------------------------
+// Resources for all the Kernels
+
+Texture2D<float4>              _mask;
+SamplerState                   sampler_mask;
+
+AppendStructuredBuffer<float2> _position_domain_buffer;
+
+
+int                            _image_width;
+int                            _image_height;
+
+#define _sample_threshold 0.5
+
+// ----------------------------------------------------------------------------------------------------
+
+[numthreads(8,8,1)]                        // 8 in 8 groups, one thread corresponds to a single pixel on the mask image
+void CS_Construct_Position_Domain(uint3 id : SV_DispatchThreadID)
+{
+   float2 texutre_coordinates = float2((float)id.x / (float)_image_width,            
+                                       (float)id.y / (float)_image_height);     
+
+   float3 mask   = _mask.SampleLevel(sampler_mask, texutre_coordinates, 0).xyz;
+          mask.r = max(max(mask.r, mask.g), mask.g); 
+
+   if (mask.r > _sample_threshold) 
+   {
+       _position_domain_buffer.Append(texutre_coordinates);
+   }
+}
+
+
+
+
+
+// ----------------------------------------------------------------------------------------------------
+// DEBUG
+
+// The below macro is used to get a random number which varies across different generations. 
+
+#define rnd(seed, constant)  wang_rnd(seed +triple32(_generation_seed) * constant) 
+
+uint triple32(uint x)
+{
+    x ^= x >> 17;
+    x *= 0xed5ad4bbU;
+    x ^= x >> 11;
+    x *= 0xac4c1b51U;
+    x ^= x >> 15;
+    x *= 0x31848babU;
+    x ^= x >> 14;
+    return x;
+}
+
+float wang_rnd(uint seed)
+{
+    uint rndint = triple32(seed);
+    return ((float)rndint) / float(0xFFFFFFFF);                                                       // 0xFFFFFFFF is max unsigned integer in hexa decimal
+}
+
+// ------------
+
+StructuredBuffer<float2>       _R_position_domain_buffer;
+StructuredBuffer<int4>         _position_domain_argument_buffer;
+RWStructuredBuffer<float2>     _debug_position_buffer;
+
+uint _generation_seed;
+
+[numthreads(64, 1, 1)]                        //64 in 1 groups, one thread corresponds to a single point used to visualise position search domain
+void CS_Debug_Position_Domain(uint3 id : SV_DispatchThreadID)
+{
+    int position_domain_length = _position_domain_argument_buffer[0].x;
+    float rn = rnd(id.x, 82);
+    int pos_domain_id = (int) floor(rn* (float)position_domain_length);
+
+    _debug_position_buffer[id.x] = _R_position_domain_buffer[pos_domain_id];
+}
