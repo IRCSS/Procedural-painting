@@ -46,6 +46,8 @@ public class EvolutionManager : MonoBehaviour
     {
 
 
+        if (ImageToReproduce.width > 1024 || ImageToReproduce.height > 1024) Debug.LogError("image provided is bigger than 1024. This probabaly not what you want");
+
         // ____________________________________________________________________________________________________
         // Construct the scale stages
         List<ScaleStage> temp = new List<ScaleStage>();

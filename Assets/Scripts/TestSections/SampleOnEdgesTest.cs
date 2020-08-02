@@ -110,6 +110,7 @@ public class SampleOnEdgesTest : MonoBehaviour
     void Update()
     {
         construct_position_domain_compute.SetInt("_generation_seed", generation_id);
+        construct_position_domain_compute.SetFloat("_sample_threshold", 0.1f);
         generation_id++;
 
 

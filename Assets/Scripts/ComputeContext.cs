@@ -14,6 +14,7 @@ public class Compute_Shaders
     public ComputeShader compute_selection_functions;                         // this file contains the compute kernels for the adjusting the fitness to accmulative weighted probablities, selecting parents, cross over as well as mutation
     public ComputeShader gaussian_compute;
     public ComputeShader sobel_compute_original;
+    public ComputeShader construct_position_domain_compute;
 
     [HideInInspector]
     public ComputeShader sobel_compute_forged;
@@ -47,6 +48,11 @@ public class Compute_Shaders
     public int gaussian_horizontal_handel;
     [HideInInspector]
     public int gaussian_vertical_handel;
+    [HideInInspector]
+    public int Construct_Position_Domain_handel;
+    [HideInInspector]
+    public int Debug_Position_Domain_to_Texture_handel;
+
 
     // ____________________________________________________________________________________________________
     // CONSTRUCTOR: Populate the bindings
@@ -54,19 +60,22 @@ public class Compute_Shaders
     {
         sobel_compute_forged = Object.Instantiate(sobel_compute_original);                                  // We are going to need two instances of this compute shader so that we can staticly bind textures to it without the need of rebinding during the frame updating
 
-        per_pixel_fitness_kernel_handel = compute_fitness_function.   FindKernel("CS_Fitness_Per_Pixel");
-        sun_rows_kernel_handel          = compute_fitness_function.   FindKernel("CS_Sum_Rows");
-        sun_column_kernel_handel        = compute_fitness_function.   FindKernel("CS_Sum_Column");
-        trans_fitness_to_prob_handel    = compute_selection_functions.FindKernel("CS_transform_fitness_to_probability");
-        debug_hash_handel               = compute_selection_functions.FindKernel("CS_debug_wang_hash");
-        parent_selection_handel         = compute_selection_functions.FindKernel("CS_parent_selection");
-        cross_over_handel               = compute_selection_functions.FindKernel("CS_cross_over");
-        mutation_and_copy_handel        = compute_selection_functions.FindKernel("CS_mutation_and_copy");
-        mutation_and_copy_BW_handel     = compute_selection_functions.FindKernel("CS_mutation_and_copy_BW");
-        sobel_handel_original           = sobel_compute_original.     FindKernel("Sobel");
-        sobel_handel_forged             = sobel_compute_forged.       FindKernel("Sobel");
-        gaussian_horizontal_handel      = gaussian_compute.           FindKernel("CS_gaussian_horizontal");
-        gaussian_vertical_handel        = gaussian_compute.           FindKernel("CS_gaussian_vertical");
+        per_pixel_fitness_kernel_handel         = compute_fitness_function.         FindKernel("CS_Fitness_Per_Pixel");
+        sun_rows_kernel_handel                  = compute_fitness_function.         FindKernel("CS_Sum_Rows");
+        sun_column_kernel_handel                = compute_fitness_function.         FindKernel("CS_Sum_Column");
+        trans_fitness_to_prob_handel            = compute_selection_functions.      FindKernel("CS_transform_fitness_to_probability");
+        debug_hash_handel                       = compute_selection_functions.      FindKernel("CS_debug_wang_hash");
+        parent_selection_handel                 = compute_selection_functions.      FindKernel("CS_parent_selection");
+        cross_over_handel                       = compute_selection_functions.      FindKernel("CS_cross_over");
+        mutation_and_copy_handel                = compute_selection_functions.      FindKernel("CS_mutation_and_copy");
+        mutation_and_copy_BW_handel             = compute_selection_functions.      FindKernel("CS_mutation_and_copy_BW");
+        sobel_handel_original                   = sobel_compute_original.           FindKernel("Sobel");
+        sobel_handel_forged                     = sobel_compute_forged.             FindKernel("Sobel");
+        gaussian_vertical_handel                = gaussian_compute.                 FindKernel("CS_gaussian_vertical");
+        gaussian_horizontal_handel              = gaussian_compute.                 FindKernel("CS_gaussian_horizontal");
+        Construct_Position_Domain_handel        = construct_position_domain_compute.FindKernel("CS_Construct_Position_Domain");
+        Debug_Position_Domain_to_Texture_handel = construct_position_domain_compute.FindKernel("CS_Debug_Position_Domain_to_Texture");
+        
 
     }
 
@@ -81,6 +90,8 @@ public class Compute_Shaders
         bind_population_accumlative_probablities_buffer (compute_resources.population_accumlative_prob_buffer);
         bind_second_gen_parent_ids_buffer               (compute_resources.second_gen_parents_ids_buffer);
         bind_fittest_member_buffer                      (compute_resources.fittest_member_buffer);
+        bind_position_domain_buffer                     (compute_resources.position_domain_buffer);
+        bind_positon_domain_arguments_buffer            (compute_resources.positon_domain_arguments_buffer);
 
         bind_original_texture         (target_image);
         bind_forged_texture           (compute_resources.compute_forged_in_render_texture);
@@ -89,6 +100,7 @@ public class Compute_Shaders
         bind_sobel_out                (compute_resources.sobel_out);
         bind_original_blured          (compute_resources.original_image_blured);
         bind_gaussian_out             (compute_resources.gaussian_out);
+        bind_debug_texture            (compute_resources.debug_texture);
 
         set_image_dimensions((uint)target_image.width, (uint)target_image.height);
         set_evolution_settings(evolution_settings.populationPoolNumber, evolution_settings.maximumNumberOfBrushStrokes);
@@ -96,6 +108,17 @@ public class Compute_Shaders
 
     // ____________________________________________________________________________________________________
     // Binding Compute Buffers
+
+    private void bind_position_domain_buffer(ComputeBuffer position_domain)
+    {
+        bind_buffers_on_compute(construct_position_domain_compute, new int[] { Construct_Position_Domain_handel },                      "_position_domain_buffer", position_domain);
+        bind_buffers_on_compute(compute_selection_functions,       new int[] { mutation_and_copy_handel, mutation_and_copy_BW_handel }, "_position_domain_buffer", position_domain);
+    }
+
+    private void bind_positon_domain_arguments_buffer(ComputeBuffer position_domain_arguments)
+    {
+        bind_buffers_on_compute(compute_selection_functions, new int[] { mutation_and_copy_handel, mutation_and_copy_BW_handel }, "_position_domain_argument_buffer", position_domain_arguments);
+    }
 
     private void bind_population_pool_buffer(ComputeBuffer buffer)
     {
@@ -171,7 +194,9 @@ public class Compute_Shaders
 
     private void bind_orignal_gradient_texture(Texture original_gradient)
     {
-        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_original_gradient", original_gradient);
+        compute_fitness_function.SetTexture         (per_pixel_fitness_kernel_handel,         "_original_gradient", original_gradient);
+        construct_position_domain_compute.SetTexture(Construct_Position_Domain_handel,        "_mask",              original_gradient);
+        construct_position_domain_compute.SetTexture(Debug_Position_Domain_to_Texture_handel, "_mask",              original_gradient);
     }
     private void bind_forged_gradient_texture(Texture forged_gradient)
     {
@@ -182,22 +207,28 @@ public class Compute_Shaders
     {
         sobel_compute_forged.SetTexture    (sobel_handel_forged,             "_source",   forged);
         compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged",   forged);
-
-
     }
+
+    private void bind_debug_texture(Texture debug_texture)
+    {
+        construct_position_domain_compute.SetTexture(Debug_Position_Domain_to_Texture_handel, "_position_domain_visualiser", debug_texture);
+    }
+
 
     private void set_image_dimensions(uint width, uint height)
     {
-        compute_fitness_function.   SetInt    ("_image_width",      (int) width) ;
-        compute_fitness_function.   SetInt    ("_image_height",     (int) height);
-        compute_selection_functions.SetInt    ("_image_width",      (int) width) ;
-        compute_selection_functions.SetInt    ("_image_height",     (int) height);
-        sobel_compute_original.     SetInt    ("_source_width",     (int) width) ;
-        sobel_compute_original.     SetInt    ("_source_height",    (int) height);
-        sobel_compute_forged.       SetInt    ("_source_width",     (int) width) ;
-        sobel_compute_forged.       SetInt    ("_source_height",    (int) height);
-        gaussian_compute.           SetInt    ("_source_width",     (int) width) ;
-        gaussian_compute.           SetInt    ("_source_height",    (int) height);
+        compute_fitness_function.   SetInt      ("_image_width",      (int) width) ;
+        compute_fitness_function.   SetInt      ("_image_height",     (int) height);
+        compute_selection_functions.SetInt      ("_image_width",      (int) width) ;
+        compute_selection_functions.SetInt      ("_image_height",     (int) height);
+        sobel_compute_original.     SetInt      ("_source_width",     (int) width) ;
+        sobel_compute_original.     SetInt      ("_source_height",    (int) height);
+        sobel_compute_forged.       SetInt      ("_source_width",     (int) width) ;
+        sobel_compute_forged.       SetInt      ("_source_height",    (int) height);
+        gaussian_compute.           SetInt      ("_source_width",     (int) width) ;
+        gaussian_compute.           SetInt      ("_source_height",    (int) height);
+        construct_position_domain_compute.SetInt("_image_width",      (int) width) ;
+        construct_position_domain_compute.SetInt("_image_height",     (int) height);
     }
 
     private void set_evolution_settings(uint population_size, uint genes_number_per_population)
@@ -237,6 +268,8 @@ public class Compute_Resources                                               // 
     public ComputeBuffer          population_accumlative_prob_buffer;        // This buffer contains the result of transforming the fitness values to an wieghted accmulative probabilities form
     public ComputeBuffer          second_gen_parents_ids_buffer;             // a buffer of pairs of IDs. Each id refers to one of the parents which is used for the cross over algo. Papulated in Computeshader
     public ComputeBuffer          fittest_member_buffer;                     // This buffer contains only one element which is the info of the fittest member of the population pool. It is written to in the compute shader and later in the looop the fittest member is redrawn for visualisation. I am sure there are better ways of doing this without a structured buffer. 
+    public ComputeBuffer          position_domain_buffer;
+    public ComputeBuffer          positon_domain_arguments_buffer;
 
 
     public RenderTexture          active_texture_target;                     // the population is renedred in this render texture, it is compared per pixel for fitness in compute later
@@ -263,7 +296,11 @@ public class Compute_Resources                                               // 
         population_accumlative_prob_buffer = new ComputeBuffer((int)evolution_setting.populationPoolNumber, sizeof(float)                      );          // You could combin this and the fitnes buffer together, I am keeping them seprated for the sake of debuging ease
         second_gen_parents_ids_buffer      = new ComputeBuffer((int)evolution_setting.populationPoolNumber, sizeof(int)   * 2                  );          // ids (int) paris. Needs to change to smoething else if you have more than 2 parent
         fittest_member_buffer              = new ComputeBuffer(1,                                           sizeof(float) + sizeof(int)        );          // This is a single value. Not sure how to bind it as random read write access without creating an entire buffer
-
+        position_domain_buffer             = new ComputeBuffer((int)pixel_count_in_image,                   sizeof(float) * 2, ComputeBufferType.Append);
+        position_domain_buffer.SetCounterValue(0);
+        positon_domain_arguments_buffer    = new ComputeBuffer(1, sizeof(int) * 4, ComputeBufferType.IndirectArguments);
+        int[] ini_value = new int[4] { 0, 0, 0, 0 };
+        positon_domain_arguments_buffer.SetData(ini_value);
 
         // -----------------------
         // Textures Initialization
@@ -344,6 +381,8 @@ public class Compute_Resources                                               // 
         population_accumlative_prob_buffer.Release();
         second_gen_parents_ids_buffer.     Release();
         fittest_member_buffer.             Release();
+        position_domain_buffer.            Release();
+        positon_domain_arguments_buffer.   Release();
 
         active_texture_target.             Release();
         compute_forged_in_render_texture.  Release();

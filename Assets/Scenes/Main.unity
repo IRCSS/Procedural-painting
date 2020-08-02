@@ -163,8 +163,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: 5ef189f03754d704a9f5b4b2e4a68b62, type: 3}
-  blackAnwWhite: 0
+  ImageToReproduce: {fileID: 2800000, guid: f98ef99889dce1b4085847b2fbaba518, type: 3}
+  blackAnwWhite: 1
   series:
   - numberOfStagesInTheSeries: 4
     seriesSetting:
@@ -186,6 +186,7 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 8
         sobel_step_size: 8
+        position_domain_threshold: 0.07
   - numberOfStagesInTheSeries: 3
     seriesSetting:
       evolution_settings:
@@ -206,6 +207,7 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 8
         sobel_step_size: 8
+        position_domain_threshold: 0.07
   - numberOfStagesInTheSeries: 3
     seriesSetting:
       evolution_settings:
@@ -226,6 +228,7 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 16
         sobel_step_size: 16
+        position_domain_threshold: 0.07
   - numberOfStagesInTheSeries: 2
     seriesSetting:
       evolution_settings:
@@ -246,6 +249,7 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 32
         sobel_step_size: 32
+        position_domain_threshold: 0.07
   compute_shaders:
     compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
       type: 3}
@@ -253,6 +257,8 @@ MonoBehaviour:
       type: 3}
     gaussian_compute: {fileID: 7200000, guid: 4e16609530cd942438ef34742b69dd5f, type: 3}
     sobel_compute_original: {fileID: 7200000, guid: 059afd89258149446b7ec661f2d43913,
+      type: 3}
+    construct_position_domain_compute: {fileID: 7200000, guid: 1d1a5e04cd4b4584bbfece7500e9dcf9,
       type: 3}
     sobel_compute_forged: {fileID: 0}
     per_pixel_fitness_kernel_handel: 0
@@ -268,6 +274,8 @@ MonoBehaviour:
     sobel_handel_forged: 0
     gaussian_horizontal_handel: 0
     gaussian_vertical_handel: 0
+    Construct_Position_Domain_handel: 0
+    Debug_Position_Domain_to_Texture_handel: 0
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

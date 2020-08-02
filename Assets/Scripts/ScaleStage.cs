@@ -167,6 +167,20 @@ public class ScaleStage
             original_image.width / 32, original_image.height / 32, 1);
 
         Graphics.Blit(compute_resources.sobel_out, compute_resources.original_image_gradient);                                                   // Copying over the results in a new read only texture. Random access resource types are not compatible with samplers. So I have to make this copy
+
+        compute_shaders.construct_position_domain_compute.Dispatch(compute_shaders.Debug_Position_Domain_to_Texture_handel,
+            original_image.width / 8, original_image.height / 8, 1);
+
+        compute_shaders.construct_position_domain_compute.Dispatch(compute_shaders.Construct_Position_Domain_handel,
+            original_image.width / 8, original_image.height / 8, 1);
+        ComputeBuffer.CopyCount(compute_resources.position_domain_buffer, compute_resources.positon_domain_arguments_buffer, 0);
+
+        int[] counter = new int[4];
+
+        compute_resources.positon_domain_arguments_buffer.GetData(counter);
+
+        Debug.Log(string.Format("The number of pixels in the position domains is: {0}", counter[0]));
+
         compute_shaders.Bind_Compute_Resources(ImageToReproduce, compute_resources, evolution_settings);
         // ____________________________________________________________________________________________________
         // CPU Arrays initalization
@@ -348,11 +362,13 @@ public class ScaleStage
     private void UpdateBalancingParameters(uint generation_id)
     {
         
-        compute_shaders.compute_selection_functions.SetInt  ("_generation_seed",(int)generation_id + Random.Range(0, 2147483647));                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
-        compute_shaders.compute_selection_functions.SetFloat("_scale_lower_bound",   evolution_settings.brushSizeLowerBound);
-        compute_shaders.compute_selection_functions.SetFloat("_scale_higher_bound",  evolution_settings.brushSizeHigherBound);
-        compute_shaders.compute_selection_functions.SetFloat("_mutation_rate",       evolution_settings.mutationChance);
-        compute_shaders.compute_selection_functions.SetFloat("_fittness_pow_factor", fitness_settings.fitnessPowFactor);
+        compute_shaders.compute_selection_functions.SetInt        ("_generation_seed",(int)generation_id + Random.Range(0, 2147483647));                                                       // This number is used in the compute shader to differention between rand number geneartion between different generations
+        compute_shaders.construct_position_domain_compute.SetInt  ("_generation_seed",(int)generation_id + Random.Range(0, 2147483647));
+        compute_shaders.construct_position_domain_compute.SetFloat("_sample_threshold",    scale_settings.position_domain_threshold);
+        compute_shaders.compute_selection_functions.SetFloat      ("_scale_lower_bound",   evolution_settings.brushSizeLowerBound);
+        compute_shaders.compute_selection_functions.SetFloat      ("_scale_higher_bound",  evolution_settings.brushSizeHigherBound);
+        compute_shaders.compute_selection_functions.SetFloat      ("_mutation_rate",       evolution_settings.mutationChance);
+        compute_shaders.compute_selection_functions.SetFloat      ("_fittness_pow_factor", fitness_settings.fitnessPowFactor);
 
         compute_shaders.sobel_compute_original.SetInt("_kernel_size", scale_settings.sobel_step_size);
         compute_shaders.sobel_compute_forged.  SetInt("_kernel_size", scale_settings.sobel_step_size);

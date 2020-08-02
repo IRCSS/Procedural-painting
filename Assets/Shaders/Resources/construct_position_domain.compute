@@ -1,5 +1,6 @@
 ﻿#pragma kernel CS_Construct_Position_Domain
 #pragma kernel CS_Debug_Position_Domain
+#pragma kernel CS_Debug_Position_Domain_to_Texture
 
 // ----------------------------------------------------------------------------------------------------
 // Resources for all the Kernels
@@ -13,7 +14,7 @@ AppendStructuredBuffer<float2> _position_domain_buffer;
 int                            _image_width;
 int                            _image_height;
 
-#define _sample_threshold 0.07
+float                          _sample_threshold = 0.07;
 
 // ----------------------------------------------------------------------------------------------------
 
@@ -31,6 +32,27 @@ void CS_Construct_Position_Domain(uint3 id : SV_DispatchThreadID)
        _position_domain_buffer.Append(texutre_coordinates);
    }
 }
+
+
+RWTexture2D<float4>            _position_domain_visualiser;
+
+[numthreads(8, 8, 1)]                        // 8 in 8 groups, one thread corresponds to a single pixel on the mask image
+void CS_Debug_Position_Domain_to_Texture(uint3 id : SV_DispatchThreadID)
+{
+    float2 texutre_coordinates = float2((float)id.x / (float)_image_width,
+        (float)id.y / (float)_image_height);
+
+    float3 mask = _mask.SampleLevel(sampler_mask, texutre_coordinates, 0).xyz;
+    mask.r = max(max(mask.r, mask.g), mask.g);
+    float out_color = 0.0;
+    if (mask.r > _sample_threshold)
+    {
+        out_color = 1.0;
+    }
+
+    _position_domain_visualiser[id.xy] = float4(out_color.xxxx);
+}
+
 
 
 

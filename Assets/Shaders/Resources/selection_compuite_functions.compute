@@ -58,6 +58,8 @@ int                          _image_height;                                     
 float                        _mutation_rate;
 float                        _scale_lower_bound;
 float                        _scale_higher_bound;
+StructuredBuffer<float2>     _position_domain_buffer;
+StructuredBuffer<int4>       _position_domain_argument_buffer;
 
 // ----------------------------------------------------------------------------------------------------
 // -------------------- https://www.shadertoy.com/view/WttXWX
@@ -91,8 +93,14 @@ inline Genes mutate_gene(uint seed, uint geneID)
 {
     Genes toReturn;
 
-    toReturn.position   = float2(rnd(seed, 51),                                                       // Position X. range -1 -> 1
-                                 rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
+
+    int position_domain_length = _position_domain_argument_buffer[0].x;
+    int pos_domain_id = (int)floor(rnd(seed, 51)* (float)position_domain_length);
+
+    toReturn.position = _position_domain_buffer[pos_domain_id] * 2.0 - 1.0;
+
+    //toReturn.position   = float2(rnd(seed, 51),                                                       // Position X. range -1 -> 1
+    //                             rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
                                                                                                       
     toReturn.z_Rotation = rnd(seed, 25) * Tau;                                                        // 0 to 360 degrees or 2 PI for our functions
                                         
@@ -115,8 +123,13 @@ inline Genes mutate_gene_BW(uint seed, uint geneID)
 {
     Genes toReturn;
 
-    toReturn.position   = float2(rnd(seed, 51),                                                       // Position X. range -1 -> 1
-                                 rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
+    int position_domain_length = _position_domain_argument_buffer[0].x;
+    int pos_domain_id = (int)floor(rnd(seed, 51)* (float)position_domain_length);
+
+    toReturn.position = _position_domain_buffer[pos_domain_id] * 2.0 - 1.0;
+
+    //toReturn.position   = float2(rnd(seed, 51),                                                       // Position X. range -1 -> 1
+    //                             rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
                                                                                                       
     toReturn.z_Rotation = rnd(seed, 25) * Tau;                                                        // 0 to 360 degrees or 2 PI for our functions
                
