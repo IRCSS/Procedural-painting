@@ -13,7 +13,7 @@ AppendStructuredBuffer<float2> _position_domain_buffer;
 int                            _image_width;
 int                            _image_height;
 
-#define _sample_threshold 0.5
+#define _sample_threshold 0.07
 
 // ----------------------------------------------------------------------------------------------------
 
@@ -73,8 +73,10 @@ uint _generation_seed;
 void CS_Debug_Position_Domain(uint3 id : SV_DispatchThreadID)
 {
     int position_domain_length = _position_domain_argument_buffer[0].x;
-    float rn = rnd(id.x, 82);
+    float rn  = rnd(id.x, 82);
+    //float rn2 = rnd(id.x, 13);
     int pos_domain_id = (int) floor(rn* (float)position_domain_length);
 
-    _debug_position_buffer[id.x] = _R_position_domain_buffer[pos_domain_id];
+    _debug_position_buffer[id.x] = _R_position_domain_buffer[pos_domain_id] * 2.0 - 1.0;
+   // _debug_position_buffer[id.x] =float2(rn, rn2) *2.0 -1.0;
 }

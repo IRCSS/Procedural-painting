@@ -6,11 +6,11 @@ using UnityEngine.Rendering;
 public class SampleOnEdgesTest : MonoBehaviour
 {
 
-    public Texture        mask;
+    public  Texture       mask;
+    public  ComputeShader construct_position_domain_compute;
 
     private Material      debug_positions_mat;
 
-    private ComputeShader construct_position_domain_compute;
 
     private ComputeBuffer position_domain_buffer;
     private ComputeBuffer debug_positions_buffer;
@@ -18,7 +18,7 @@ public class SampleOnEdgesTest : MonoBehaviour
 
     private CommandBuffer command_buffer;
 
-    private int           numberOfPoints = 32768;
+    private int           numberOfPoints =128;
 
     private Camera        cam;
 
@@ -27,25 +27,13 @@ public class SampleOnEdgesTest : MonoBehaviour
 
     private int           generation_id;
 
+    public struct float2
+    {
+        public float x, y;
+    }
+
     void Start()
     {
-        // -----------------------------------------
-        debug_positions_mat = new Material(Shader.Find("Unlit/pointRenderer"));
-        if (debug_positions_mat) Debug.LogError("No Material found!");
-
-        // -----------------------------------------
-        Construct_Position_Domain_handel = construct_position_domain_compute.FindKernel("CS_Construct_Position_Domain");
-        Debug_Position_Domain_handel     = construct_position_domain_compute.FindKernel("CS_Debug_Position_Domain");
-
-        construct_position_domain_compute.SetTexture(Construct_Position_Domain_handel, "_mask",                   mask);
-        construct_position_domain_compute.SetBuffer (Construct_Position_Domain_handel, "_position_domain_buffer", position_domain_buffer);
-
-        construct_position_domain_compute.SetInt("_image_width",  mask.width);
-        construct_position_domain_compute.SetInt("_image_height", mask.height);
-
-        construct_position_domain_compute.SetBuffer(Debug_Position_Domain_handel, "_R_position_domain_buffer",        position_domain_buffer);
-        construct_position_domain_compute.SetBuffer(Debug_Position_Domain_handel, "_position_domain_argument_buffer", positon_domain_arguments_buffer);
-        construct_position_domain_compute.SetBuffer(Debug_Position_Domain_handel, "_debug_position_buffer",           debug_positions_buffer);
 
         // -----------------------------------------
 
@@ -64,17 +52,43 @@ public class SampleOnEdgesTest : MonoBehaviour
         debug_positions_buffer = new ComputeBuffer(numberOfPoints, sizeof(float) * 2);
 
         // -----------------------------------------
+        debug_positions_mat = new Material(Shader.Find("Unlit/pointRenderer"));
+        if (!debug_positions_mat) Debug.LogError("No Material found!");
+        debug_positions_mat.SetBuffer("buffer", debug_positions_buffer);
+        // -----------------------------------------
+        Construct_Position_Domain_handel = construct_position_domain_compute.FindKernel("CS_Construct_Position_Domain");
+        Debug_Position_Domain_handel     = construct_position_domain_compute.FindKernel("CS_Debug_Position_Domain");
 
+        construct_position_domain_compute.SetTexture(Construct_Position_Domain_handel, "_mask",                   mask);
+        construct_position_domain_compute.SetBuffer (Construct_Position_Domain_handel, "_position_domain_buffer", position_domain_buffer);
+
+        construct_position_domain_compute.SetInt("_image_width",  mask.width);
+        construct_position_domain_compute.SetInt("_image_height", mask.height);
+
+        construct_position_domain_compute.SetBuffer(Debug_Position_Domain_handel, "_R_position_domain_buffer",        position_domain_buffer);
+        construct_position_domain_compute.SetBuffer(Debug_Position_Domain_handel, "_position_domain_argument_buffer", positon_domain_arguments_buffer);
+        construct_position_domain_compute.SetBuffer(Debug_Position_Domain_handel, "_debug_position_buffer",           debug_positions_buffer);
+
+
+        // -----------------------------------------
         cam = Camera.main;
         if (!cam) Debug.LogError("No Camera is tagged as main");
 
-        cam.clearFlags = CameraClearFlags.Nothing;
-
+        cam.clearFlags   = CameraClearFlags.Nothing;
+        cam.orthographic = true;
+        cam.orthographicSize = 1;
 
         // -----------------------------------------
 
         construct_position_domain_compute.Dispatch(Construct_Position_Domain_handel, mask.width / 8, mask.height / 8, 1);
         ComputeBuffer.CopyCount(position_domain_buffer, positon_domain_arguments_buffer, 0);
+
+
+        int[] counter = new int[4];
+
+        positon_domain_arguments_buffer.GetData(counter);
+
+        Debug.Log(string.Format("The number of pixels in the position domains is: {0}", counter[0]));
 
         // -----------------------------------------
 
@@ -87,6 +101,9 @@ public class SampleOnEdgesTest : MonoBehaviour
         command_buffer.DispatchCompute(construct_position_domain_compute, Debug_Position_Domain_handel,
                                        numberOfPoints / 64, 1, 1);
         command_buffer.DrawProcedural(Matrix4x4.identity, debug_positions_mat, 0, MeshTopology.Points, numberOfPoints);
+
+
+        cam.AddCommandBuffer(CameraEvent.AfterEverything, command_buffer);
     }
 
 
@@ -94,5 +111,21 @@ public class SampleOnEdgesTest : MonoBehaviour
     {
         construct_position_domain_compute.SetInt("_generation_seed", generation_id);
         generation_id++;
+
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            float2[] points_pos = new float2[numberOfPoints];
+            debug_positions_buffer.GetData(points_pos);
+
+            int i = 0;
+            foreach(float2 f in points_pos)
+            {
+
+                Debug.Log(string.Format("Partile index {0}, has position ({1}, {2})", i, f.x, f.y));
+                i++;
+            }
+        }
+
     }
 }
