@@ -48,5 +48,5 @@ void Sobel(uint3 id : SV_DispatchThreadID)
 
     float3 color = sqrt((horizontal*horizontal) + (vertical * vertical));
 
-    _result[id.xy] = float4(color.xyz, 1.);
+    _result[id.xy] = float4(saturate(color.xyz), 1.);
 }

@@ -52,7 +52,10 @@ public class Compute_Shaders
     public int Construct_Position_Domain_handel;
     [HideInInspector]
     public int Debug_Position_Domain_to_Texture_handel;
-
+    [HideInInspector]
+    public int populate_population;
+    [HideInInspector]
+    public int populate_population_BW;
 
     // ____________________________________________________________________________________________________
     // CONSTRUCTOR: Populate the bindings
@@ -69,13 +72,14 @@ public class Compute_Shaders
         cross_over_handel                       = compute_selection_functions.      FindKernel("CS_cross_over");
         mutation_and_copy_handel                = compute_selection_functions.      FindKernel("CS_mutation_and_copy");
         mutation_and_copy_BW_handel             = compute_selection_functions.      FindKernel("CS_mutation_and_copy_BW");
+        populate_population                     = compute_selection_functions.      FindKernel("CS_populate_population");
+        populate_population_BW                  = compute_selection_functions.      FindKernel("CS_populate_population_BW");
         sobel_handel_original                   = sobel_compute_original.           FindKernel("Sobel");
         sobel_handel_forged                     = sobel_compute_forged.             FindKernel("Sobel");
         gaussian_vertical_handel                = gaussian_compute.                 FindKernel("CS_gaussian_vertical");
         gaussian_horizontal_handel              = gaussian_compute.                 FindKernel("CS_gaussian_horizontal");
         Construct_Position_Domain_handel        = construct_position_domain_compute.FindKernel("CS_Construct_Position_Domain");
         Debug_Position_Domain_to_Texture_handel = construct_position_domain_compute.FindKernel("CS_Debug_Position_Domain_to_Texture");
-        
 
     }
 
@@ -111,18 +115,19 @@ public class Compute_Shaders
 
     private void bind_position_domain_buffer(ComputeBuffer position_domain)
     {
-        bind_buffers_on_compute(construct_position_domain_compute, new int[] { Construct_Position_Domain_handel },                      "_position_domain_buffer", position_domain);
-        bind_buffers_on_compute(compute_selection_functions,       new int[] { mutation_and_copy_handel, mutation_and_copy_BW_handel }, "_position_domain_buffer", position_domain);
+        bind_buffers_on_compute(construct_position_domain_compute, new int[] { Construct_Position_Domain_handel },                                                                    "_position_domain_buffer", position_domain);
+        bind_buffers_on_compute(compute_selection_functions,       new int[] { mutation_and_copy_handel, mutation_and_copy_BW_handel, populate_population , populate_population_BW }, "_position_domain_buffer", position_domain);
     }
 
     private void bind_positon_domain_arguments_buffer(ComputeBuffer position_domain_arguments)
     {
-        bind_buffers_on_compute(compute_selection_functions, new int[] { mutation_and_copy_handel, mutation_and_copy_BW_handel }, "_position_domain_argument_buffer", position_domain_arguments);
+        bind_buffers_on_compute(compute_selection_functions, new int[] { mutation_and_copy_handel, mutation_and_copy_BW_handel, populate_population, populate_population_BW }, "_position_domain_argument_buffer", position_domain_arguments);
     }
 
     private void bind_population_pool_buffer(ComputeBuffer buffer)
     {
-        bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel, parent_selection_handel, cross_over_handel, mutation_and_copy_handel, mutation_and_copy_BW_handel }, "_population_pool", buffer);
+        bind_buffers_on_compute(compute_selection_functions, new int[] { trans_fitness_to_prob_handel, parent_selection_handel, cross_over_handel,
+                                                                         mutation_and_copy_handel, mutation_and_copy_BW_handel, populate_population, populate_population_BW }, "_population_pool", buffer);
     }
 
     private void bind_second_gen_buffer(ComputeBuffer buffer)

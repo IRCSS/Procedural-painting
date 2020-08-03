@@ -17,13 +17,13 @@ int                          _population_id_handel;                             
 // Resources for CS_Fitness_Per_Pixel                                                                    
 Texture2D<float4>            _original;                                                                  // the original image we want to replicate. The pixels in this image are used to calculated the fitness of each population
 Texture2D<float4>            _original_gradient;                                                         // a processed version of the original image which has the gradient in each pixel calculated by the sobel filter instead of the rgb value
-Texture2D<float4>            _forged_gradient;                                                           // Same as above but for the forged attempt
+//Texture2D<float4>            _forged_gradient;                                                           // Same as above but for the forged attempt
 Texture2D<float4>            _forged;                                                                    // What coames out of the render pipline, it is the visualisation of the population which gets compared to the original
 
 SamplerState                 sampler_original;
 SamplerState                 sampler_forged;
 SamplerState                 sampler_original_gradient;
-SamplerState                 sampler_forged_gradient;
+//SamplerState                 sampler_forged_gradient;
 
 float _hue_weight;
 float _sat_weight;
@@ -76,7 +76,7 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 
 
     float3 origina_gradient = _original_gradient.SampleLevel(sampler_original_gradient, texutre_coordinates, 0).xyz;
-    origina_gradient.x = origina_gradient.x*0.3 + origina_gradient.y*0.3 + origina_gradient.z*0.3;
+    origina_gradient.x = max(origina_gradient.x, max(origina_gradient.y, origina_gradient.z));
     //float3 forged_gradient  = _forged_gradient.  SampleLevel(sampler_forged_gradient, texutre_coordinates, 0).xyz;
 
     float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0).xyz;

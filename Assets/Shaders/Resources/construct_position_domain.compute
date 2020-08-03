@@ -25,7 +25,7 @@ void CS_Construct_Position_Domain(uint3 id : SV_DispatchThreadID)
                                        (float)id.y / (float)_image_height);     
 
    float3 mask   = _mask.SampleLevel(sampler_mask, texutre_coordinates, 0).xyz;
-          mask.r = max(max(mask.r, mask.g), mask.g); 
+          mask.r =  mask.r*0.33 + mask.g*0.33 + mask.b*0.33;
 
    if (mask.r > _sample_threshold) 
    {
@@ -43,7 +43,7 @@ void CS_Debug_Position_Domain_to_Texture(uint3 id : SV_DispatchThreadID)
         (float)id.y / (float)_image_height);
 
     float3 mask = _mask.SampleLevel(sampler_mask, texutre_coordinates, 0).xyz;
-    mask.r = max(max(mask.r, mask.g), mask.g);
+    mask.r = mask.r*0.33+mask.g*0.33+ mask.b*0.33;
     float out_color = 0.0;
     if (mask.r > _sample_threshold)
     {

@@ -166,7 +166,7 @@ MonoBehaviour:
   ImageToReproduce: {fileID: 2800000, guid: f98ef99889dce1b4085847b2fbaba518, type: 3}
   blackAnwWhite: 1
   series:
-  - numberOfStagesInTheSeries: 4
+  - numberOfStagesInTheSeries: 6
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
@@ -184,16 +184,16 @@ MonoBehaviour:
         fitnessPowFactor: 4
       scale_settings:
         sigma: 16
-        gaussian_kernel_size: 8
-        sobel_step_size: 8
-        position_domain_threshold: 0.07
+        gaussian_kernel_size: 4
+        sobel_step_size: 4
+        position_domain_threshold: 0.15
   - numberOfStagesInTheSeries: 3
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
         brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
-        mutationChance: 0.01
+        mutationChance: 0.03
         brushSizeLowerBound: 0.3
         brushSizeHigherBound: 0.4
       fitness_settings:
@@ -208,7 +208,7 @@ MonoBehaviour:
         gaussian_kernel_size: 8
         sobel_step_size: 8
         position_domain_threshold: 0.07
-  - numberOfStagesInTheSeries: 3
+  - numberOfStagesInTheSeries: 4
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
@@ -228,14 +228,35 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 16
         sobel_step_size: 16
-        position_domain_threshold: 0.07
-  - numberOfStagesInTheSeries: 2
+        position_domain_threshold: 0.05
+  - numberOfStagesInTheSeries: 4
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
         brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
         mutationChance: 0.01
+        brushSizeLowerBound: 0.4
+        brushSizeHigherBound: 0.5
+      fitness_settings:
+        colorTotalWeight: 1
+        gradientTotalWeight: 1
+        hueWeight: 0.333
+        satWeight: 0.333
+        valWeight: 0.333
+        fitnessPowFactor: 4
+      scale_settings:
+        sigma: 16
+        gaussian_kernel_size: 32
+        sobel_step_size: 32
+        position_domain_threshold: -1
+  - numberOfStagesInTheSeries: 1
+    seriesSetting:
+      evolution_settings:
+        populationPoolNumber: 128
+        maximumNumberOfBrushStrokes: 32
+        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        mutationChance: 0.03
         brushSizeLowerBound: 1
         brushSizeHigherBound: 3
       fitness_settings:
@@ -249,7 +270,7 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 32
         sobel_step_size: 32
-        position_domain_threshold: 0.07
+        position_domain_threshold: -1
   compute_shaders:
     compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
       type: 3}
@@ -276,6 +297,9 @@ MonoBehaviour:
     gaussian_vertical_handel: 0
     Construct_Position_Domain_handel: 0
     Debug_Position_Domain_to_Texture_handel: 0
+    populate_population: 0
+    populate_population_BW: 0
+  current_search_domain_visualisation: {fileID: 0}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0

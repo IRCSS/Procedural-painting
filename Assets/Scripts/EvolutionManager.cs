@@ -29,6 +29,9 @@ public class EvolutionManager : MonoBehaviour
     [Header("Soft References")]
     public   Compute_Shaders      compute_shaders;                           // All the boiler plate code, binding and references for the compute shaders. Look in the comments in the struct for more info 
 
+    [Header("Debug")]
+    public RenderTexture          current_search_domain_visualisation;
+
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Private
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -47,6 +50,9 @@ public class EvolutionManager : MonoBehaviour
 
 
         if (ImageToReproduce.width > 1024 || ImageToReproduce.height > 1024) Debug.LogError("image provided is bigger than 1024. This probabaly not what you want");
+
+        current_search_domain_visualisation = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height, 0);
+        
 
         // ____________________________________________________________________________________________________
         // Construct the scale stages
@@ -86,7 +92,7 @@ public class EvolutionManager : MonoBehaviour
         // Stage initialisation
 
         current_stage = (uint) stages.Length - 1;
-        stages[current_stage].initialise_stage(ImageToReproduce, current_background, compute_shaders, blackAnwWhite, current_stage);
+        stages[current_stage].initialise_stage(ImageToReproduce, current_background, compute_shaders, blackAnwWhite, current_stage, this);
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -99,13 +105,13 @@ public class EvolutionManager : MonoBehaviour
         generation_identifier++;
         bool isStuckInLocalMinima = stages[current_stage].update_stage(generation_identifier);
 
-        
+        //isStuckInLocalMinima = false;
 
         if ((Input.GetKeyDown(KeyCode.N) || isStuckInLocalMinima) && current_stage>0)
         {
             stages[current_stage].deinitialize_stage(ref current_background);
             current_stage--;
-            stages[current_stage].initialise_stage(ImageToReproduce, current_background, compute_shaders, blackAnwWhite, current_stage);
+            stages[current_stage].initialise_stage(ImageToReproduce, current_background, compute_shaders, blackAnwWhite, current_stage, this);
 
         }
 

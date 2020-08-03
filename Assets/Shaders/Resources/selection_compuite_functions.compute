@@ -5,7 +5,8 @@
 #pragma kernel CS_cross_over
 #pragma kernel CS_mutation_and_copy
 #pragma kernel CS_mutation_and_copy_BW
-
+#pragma kernel CS_populate_population
+#pragma kernel CS_populate_population_BW
 
 
 struct MemberIDFitnessPair 
@@ -273,5 +274,26 @@ void CS_mutation_and_copy_BW(uint3 id : SV_DispatchThreadID)
 
     if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene_BW(id.x, popluation_gene_id);
     else _population_pool[id.x] = _second_gen_population_pool[id.x];
+
+}
+
+
+[numthreads(128, 1, 1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+void CS_populate_population(uint3 id : SV_DispatchThreadID)
+{
+    float rand = rnd(id.x, 156);
+
+    uint  popluation_gene_id = fmod(id.x, _genes_number_per_member);
+    _population_pool[id.x] = mutate_gene(id.x, popluation_gene_id);
+
+}
+
+[numthreads(128, 1, 1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+void CS_populate_population_BW(uint3 id : SV_DispatchThreadID)
+{
+    float rand = rnd(id.x, 156);
+
+    uint  popluation_gene_id = fmod(id.x, _genes_number_per_member);
+    _population_pool[id.x] = mutate_gene_BW(id.x, popluation_gene_id);
 
 }

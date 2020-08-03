@@ -19,19 +19,19 @@ public class FitnessData
 
     public bool IsInMinima()
     {
-        return (average_fitness_dt.GetAverage() < 0.000001f);
+        return (average_fitness_dt.GetAverage() < 0.00001f);
     }
 
     public FitnessData ()
     {
-        instantaneous        =   0.0f                       ;
-        firstDerivative      =   0.0f                       ;
-        secondDerivative     =   0.0f                       ;   
-        last_firstDerivative =   0.0f                       ;
-        last_instantaneous   =   0.0f                       ;
-        average_fitness      =   new AverageContainer(600)  ;     
-        average_fitness_dt   =   new AverageContainer(600)  ;  
-        average_ftiness_dt2  =   new AverageContainer(600)  ; 
+        instantaneous        =    0.0f                      ;
+        firstDerivative      =    0.0f                      ;
+        secondDerivative     =    0.0f                      ;   
+        last_firstDerivative =   -1000.0f                   ;               // The negative values are there to fake a first push to first derivative, other wise it starts at a local minima
+        last_instantaneous   =   -1000.0f                   ;               // The negative values are there to fake a first push to first derivative, other wise it starts at a local minima
+        average_fitness      =   new AverageContainer(1200)  ;     
+        average_fitness_dt   =   new AverageContainer(1200)  ;  
+        average_ftiness_dt2  =   new AverageContainer(1200)  ; 
     }
 
     public void Update(float current_fitness)
@@ -111,7 +111,7 @@ public class ScaleStage
     // Initialisation
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    public void initialise_stage(Texture original_image, RenderTexture clear_with_base, Compute_Shaders shaders, bool is_black_white, uint stage_id)
+    public void initialise_stage(Texture original_image, RenderTexture clear_with_base, Compute_Shaders shaders, bool is_black_white, uint stage_id, EvolutionManager evl_man_lazy_ref)
     {
 
         fitness_data = new FitnessData();
@@ -149,7 +149,10 @@ public class ScaleStage
         // ____________________________________________________________________________________________________
         // Compute Shader Bindings
 
+
         compute_shaders.Bind_Compute_Resources(ImageToReproduce, compute_resources, evolution_settings);
+
+        UpdateBalancingParameters(0); // so that the parameters for the sobel/ gaussian and position search domain is set here
 
         // ____________________________________________________________________________________________________
         // Procesing the orignal Image
@@ -171,8 +174,12 @@ public class ScaleStage
         compute_shaders.construct_position_domain_compute.Dispatch(compute_shaders.Debug_Position_Domain_to_Texture_handel,
             original_image.width / 8, original_image.height / 8, 1);
 
+        Graphics.Blit(compute_resources.debug_texture, evl_man_lazy_ref.current_search_domain_visualisation);
+
         compute_shaders.construct_position_domain_compute.Dispatch(compute_shaders.Construct_Position_Domain_handel,
             original_image.width / 8, original_image.height / 8, 1);
+
+
         ComputeBuffer.CopyCount(compute_resources.position_domain_buffer, compute_resources.positon_domain_arguments_buffer, 0);
 
         int[] counter = new int[4];
@@ -188,19 +195,28 @@ public class ScaleStage
         // -----------------------
         // Population Pool first gen initializatiopn
 
+        // Old CPU Populasation
         int total_number_of_genes = (int)(evolution_settings.populationPoolNumber * evolution_settings.maximumNumberOfBrushStrokes);
-        Genes[] initialPop = new Genes[total_number_of_genes];
+        //Genes[] initialPop = new Genes[total_number_of_genes];
 
-        if(!is_black_white)
-        CPUSystems.InitatePopulationMember(ref initialPop, evolution_settings.brushSizeLowerBound, 
-            evolution_settings.brushSizeHigherBound);
-        else
-        CPUSystems.InitatePopulationMemberBW(ref initialPop, evolution_settings.brushSizeLowerBound,
-            evolution_settings.brushSizeHigherBound);
+        //if(!is_black_white)
+        //CPUSystems.InitatePopulationMember(ref initialPop, evolution_settings.brushSizeLowerBound, 
+        //    evolution_settings.brushSizeHigherBound);
+        //else
+        //CPUSystems.InitatePopulationMemberBW(ref initialPop, evolution_settings.brushSizeLowerBound,
+        //    evolution_settings.brushSizeHigherBound);
 
         // -----------------------
         // Sending the Data to the GPU
-        compute_resources.population_pool_buffer.SetData(initialPop);
+        //compute_resources.population_pool_buffer.SetData(initialPop);
+
+        if (!is_black_white)
+            compute_shaders.compute_selection_functions.Dispatch(                                                                              // This copies the cross overed genes from second gen to the main buffer for rendering in next frame and also mutates some of them
+                compute_shaders.populate_population, total_number_of_genes / 128, 1, 1);
+        else
+            compute_shaders.compute_selection_functions.Dispatch(                                                                              // This copies the cross overed genes from second gen to the main buffer for rendering in next frame and also mutates some of them. However mutation is in black and white
+               compute_shaders.populate_population_BW, total_number_of_genes / 128, 1, 1);
+
 
         // ____________________________________________________________________________________________________
         // Command Buffer Generation
@@ -241,10 +257,10 @@ public class ScaleStage
             // -----------------------
             // Apply sobel effect 
 
-            stage_command_buffer.DispatchCompute(compute_shaders.sobel_compute_forged, compute_shaders.sobel_handel_forged,                    // This step calculates the gradient of each pixel in the forged image. This is then used for fitness fucntion
-                ImageToReproduce.width / 32, ImageToReproduce.height / 32, 1);
+            //stage_command_buffer.DispatchCompute(compute_shaders.sobel_compute_forged, compute_shaders.sobel_handel_forged,                    // This step calculates the gradient of each pixel in the forged image. This is then used for fitness fucntion
+            //    ImageToReproduce.width / 32, ImageToReproduce.height / 32, 1);
 
-            stage_command_buffer.CopyTexture(compute_resources.sobel_out, compute_resources.forged_image_gradient);
+            //stage_command_buffer.CopyTexture(compute_resources.sobel_out, compute_resources.forged_image_gradient);
 
             // -----------------------
             //Compute Fitness
