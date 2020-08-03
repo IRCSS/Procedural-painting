@@ -164,8 +164,52 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ImageToReproduce: {fileID: 2800000, guid: f98ef99889dce1b4085847b2fbaba518, type: 3}
-  blackAnwWhite: 1
+  blackAnwWhite: 0
   series:
+  - numberOfStagesInTheSeries: 6
+    seriesSetting:
+      evolution_settings:
+        populationPoolNumber: 128
+        maximumNumberOfBrushStrokes: 128
+        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        mutationChance: 0.01
+        brushSizeLowerBound: 0.1
+        brushSizeHigherBound: 0.2
+      fitness_settings:
+        colorTotalWeight: 1
+        gradientTotalWeight: 1
+        hueWeight: 0.333
+        satWeight: 0.333
+        valWeight: 0.333
+        fitnessPowFactor: 4
+      scale_settings:
+        sigma: 16
+        gaussian_kernel_size: 8
+        sobel_step_size: 2
+        position_domain_threshold: 0.2
+        apply_mask: 1
+  - numberOfStagesInTheSeries: 6
+    seriesSetting:
+      evolution_settings:
+        populationPoolNumber: 128
+        maximumNumberOfBrushStrokes: 32
+        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        mutationChance: 0.01
+        brushSizeLowerBound: 0.1
+        brushSizeHigherBound: 0.2
+      fitness_settings:
+        colorTotalWeight: 1
+        gradientTotalWeight: 1
+        hueWeight: 0.333
+        satWeight: 0.333
+        valWeight: 0.333
+        fitnessPowFactor: 4
+      scale_settings:
+        sigma: 16
+        gaussian_kernel_size: 8
+        sobel_step_size: 2
+        position_domain_threshold: 0.2
+        apply_mask: 1
   - numberOfStagesInTheSeries: 6
     seriesSetting:
       evolution_settings:
@@ -187,6 +231,7 @@ MonoBehaviour:
         gaussian_kernel_size: 4
         sobel_step_size: 4
         position_domain_threshold: 0.15
+        apply_mask: 1
   - numberOfStagesInTheSeries: 3
     seriesSetting:
       evolution_settings:
@@ -208,6 +253,7 @@ MonoBehaviour:
         gaussian_kernel_size: 8
         sobel_step_size: 8
         position_domain_threshold: 0.07
+        apply_mask: 1
   - numberOfStagesInTheSeries: 4
     seriesSetting:
       evolution_settings:
@@ -229,6 +275,29 @@ MonoBehaviour:
         gaussian_kernel_size: 16
         sobel_step_size: 16
         position_domain_threshold: 0.05
+        apply_mask: 1
+  - numberOfStagesInTheSeries: 2
+    seriesSetting:
+      evolution_settings:
+        populationPoolNumber: 128
+        maximumNumberOfBrushStrokes: 32
+        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        mutationChance: 0.01
+        brushSizeLowerBound: 0.4
+        brushSizeHigherBound: 0.5
+      fitness_settings:
+        colorTotalWeight: 1
+        gradientTotalWeight: 1
+        hueWeight: 0.333
+        satWeight: 0.333
+        valWeight: 0.333
+        fitnessPowFactor: 4
+      scale_settings:
+        sigma: 16
+        gaussian_kernel_size: 32
+        sobel_step_size: 32
+        position_domain_threshold: -1
+        apply_mask: 1
   - numberOfStagesInTheSeries: 4
     seriesSetting:
       evolution_settings:
@@ -250,6 +319,7 @@ MonoBehaviour:
         gaussian_kernel_size: 32
         sobel_step_size: 32
         position_domain_threshold: -1
+        apply_mask: 0
   - numberOfStagesInTheSeries: 1
     seriesSetting:
       evolution_settings:
@@ -271,6 +341,7 @@ MonoBehaviour:
         gaussian_kernel_size: 32
         sobel_step_size: 32
         position_domain_threshold: -1
+        apply_mask: 0
   compute_shaders:
     compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
       type: 3}
@@ -444,7 +515,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 1
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

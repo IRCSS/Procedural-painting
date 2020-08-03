@@ -395,9 +395,10 @@ public class ScaleStage
         compute_shaders.compute_fitness_function.SetFloat("_color_total_weight",    fitness_settings.colorTotalWeight);
         compute_shaders.compute_fitness_function.SetFloat("_gradient_total_weight", fitness_settings.gradientTotalWeight);
 
-        compute_shaders.compute_fitness_function.SetFloat("_hue_weight", fitness_settings.hueWeight);
-        compute_shaders.compute_fitness_function.SetFloat("_sat_weight", fitness_settings.satWeight);
-        compute_shaders.compute_fitness_function.SetFloat("_val_weight", fitness_settings.valWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_hue_weight",  fitness_settings.hueWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_sat_weight",  fitness_settings.satWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_val_weight",  fitness_settings.valWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_mask_active", scale_settings.apply_mask ? 0 : 1);
     }
 
     private void ClearAllRenderTargets(ref CommandBuffer cb, bool color, bool depth, Color c)

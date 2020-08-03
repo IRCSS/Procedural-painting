@@ -31,6 +31,8 @@ float _val_weight;
 float _color_total_weight;
 float _gradient_total_weight;
 
+float _mask_active;
+
 // ---------------------------------------------------------------------------------------------------
 // Resources for CS_Sum_Rows
 RWStructuredBuffer <float2>   _rows_sums_array;                                                          // To take the average fitness of a population, we fist sum up each row to a single value and save in this buffer
@@ -76,7 +78,7 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 
 
     float3 origina_gradient = _original_gradient.SampleLevel(sampler_original_gradient, texutre_coordinates, 0).xyz;
-    origina_gradient.x = max(origina_gradient.x, max(origina_gradient.y, origina_gradient.z));
+    origina_gradient.x = max(_mask_active, max(origina_gradient.x, max(origina_gradient.y, origina_gradient.z)));
     //float3 forged_gradient  = _forged_gradient.  SampleLevel(sampler_forged_gradient, texutre_coordinates, 0).xyz;
 
     float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0).xyz;

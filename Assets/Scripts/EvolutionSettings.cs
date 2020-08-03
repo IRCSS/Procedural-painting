@@ -53,12 +53,14 @@ public class Scale_Settings
     public int         gaussian_kernel_size          = 16           ;            // large kernel size create better quality and more blur with cost of performance. bigger kernel -> more samples 
     public int         sobel_step_size               = 1            ;            // how large is the step to left and right for samples use to measure image gradient
     public float       position_domain_threshold     = 0.1f         ;
+    public bool        apply_mask                    = true         ;
     public Scale_Settings()                          
      {
          sigma                         = 0.1f    ;
          gaussian_kernel_size          = 16      ;
          sobel_step_size               = 1       ;
          position_domain_threshold     = 0.1f    ;
+         apply_mask                    = true    ;
      }
 
    public Scale_Settings(Scale_Settings other)                                   // Copy Constructor
@@ -67,6 +69,7 @@ public class Scale_Settings
         gaussian_kernel_size          = other.gaussian_kernel_size     ;
         sobel_step_size               = other.sobel_step_size          ;
         position_domain_threshold     = other.position_domain_threshold;
+        apply_mask                    = other.apply_mask               ;
     }
 }
 

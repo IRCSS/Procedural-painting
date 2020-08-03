@@ -75,9 +75,9 @@ public class EvolutionManager : MonoBehaviour
         if (!main_cam) Debug.LogError("Main Camera not found, add a camera to " +
             "the scene and add the main camera tag to it");
 
-        main_cam.orthographic    = true;
-        main_cam.aspect          = (float)ImageToReproduce.width/ (float)ImageToReproduce.height;
-       
+        main_cam.orthographic     = true;
+        main_cam.aspect           = (float)ImageToReproduce.width/ (float)ImageToReproduce.height;
+        main_cam.orthographicSize = 1;
         // ____________________________________________________________________________________________________
         // Command Buffer initialization
 
