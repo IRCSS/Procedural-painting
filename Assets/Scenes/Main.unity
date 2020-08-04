@@ -163,15 +163,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: f98ef99889dce1b4085847b2fbaba518, type: 3}
-  blackAnwWhite: 0
+  ImageToReproduce: {fileID: 2800000, guid: 45cb863f24a9575418c33e1beba84a0a, type: 3}
+  blackAnwWhite: 1
   series:
   - numberOfStagesInTheSeries: 6
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
-        maximumNumberOfBrushStrokes: 128
-        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        maximumNumberOfBrushStrokes: 32
+        brushTexture: {fileID: 2800000, guid: 364912c0c54d76d4380f22f8b1218f31, type: 3}
         mutationChance: 0.01
         brushSizeLowerBound: 0.1
         brushSizeHigherBound: 0.2
@@ -193,7 +193,7 @@ MonoBehaviour:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
-        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        brushTexture: {fileID: 2800000, guid: 364912c0c54d76d4380f22f8b1218f31, type: 3}
         mutationChance: 0.01
         brushSizeLowerBound: 0.1
         brushSizeHigherBound: 0.2
@@ -208,15 +208,15 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 8
         sobel_step_size: 2
-        position_domain_threshold: 0.2
+        position_domain_threshold: 0.3
         apply_mask: 1
   - numberOfStagesInTheSeries: 6
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
-        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
-        mutationChance: 0.01
+        brushTexture: {fileID: 2800000, guid: 364912c0c54d76d4380f22f8b1218f31, type: 3}
+        mutationChance: 0.02
         brushSizeLowerBound: 0.1
         brushSizeHigherBound: 0.5
       fitness_settings:
@@ -230,14 +230,14 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 4
         sobel_step_size: 4
-        position_domain_threshold: 0.15
+        position_domain_threshold: 0.6
         apply_mask: 1
   - numberOfStagesInTheSeries: 3
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
-        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        brushTexture: {fileID: 2800000, guid: 364912c0c54d76d4380f22f8b1218f31, type: 3}
         mutationChance: 0.03
         brushSizeLowerBound: 0.3
         brushSizeHigherBound: 0.4
@@ -252,14 +252,14 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 8
         sobel_step_size: 8
-        position_domain_threshold: 0.07
+        position_domain_threshold: 0.15
         apply_mask: 1
   - numberOfStagesInTheSeries: 4
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
-        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        brushTexture: {fileID: 2800000, guid: 364912c0c54d76d4380f22f8b1218f31, type: 3}
         mutationChance: 0.01
         brushSizeLowerBound: 0.4
         brushSizeHigherBound: 0.5
@@ -274,14 +274,14 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 16
         sobel_step_size: 16
-        position_domain_threshold: 0.05
+        position_domain_threshold: 0.7
         apply_mask: 1
   - numberOfStagesInTheSeries: 2
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
-        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        brushTexture: {fileID: 2800000, guid: 364912c0c54d76d4380f22f8b1218f31, type: 3}
         mutationChance: 0.01
         brushSizeLowerBound: 0.4
         brushSizeHigherBound: 0.5
@@ -296,14 +296,14 @@ MonoBehaviour:
         sigma: 16
         gaussian_kernel_size: 32
         sobel_step_size: 32
-        position_domain_threshold: -1
+        position_domain_threshold: 0.6
         apply_mask: 1
   - numberOfStagesInTheSeries: 4
     seriesSetting:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
-        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        brushTexture: {fileID: 2800000, guid: 364912c0c54d76d4380f22f8b1218f31, type: 3}
         mutationChance: 0.01
         brushSizeLowerBound: 0.4
         brushSizeHigherBound: 0.5
@@ -325,7 +325,7 @@ MonoBehaviour:
       evolution_settings:
         populationPoolNumber: 128
         maximumNumberOfBrushStrokes: 32
-        brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+        brushTexture: {fileID: 2800000, guid: 364912c0c54d76d4380f22f8b1218f31, type: 3}
         mutationChance: 0.03
         brushSizeLowerBound: 1
         brushSizeHigherBound: 3

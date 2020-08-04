@@ -158,7 +158,6 @@ inline float inverse_lerp(float value, float a, float b)
 void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 {
     
-    float total_sum    = 0.0;
     float temp         = 0.0;
     
     float highest_fitness  = 0.0f;
@@ -182,8 +181,10 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
     }
 
     _fittest_member[0].memberID      = m_fittest_member;
-    _fittest_member[0].memberFitness = highest_fitness/*/ (_population_fitness_array[i].y)*/;
+    _fittest_member[0].memberFitness = highest_fitness/ (_population_fitness_array[m_fittest_member].y);
 
+
+    float total_sum    = 0.0;
     for (uint k = 0; k < _population_pool_size; k++) 
     {
         total_sum  += pow(inverse_lerp(_population_fitness_array[k].x, lowest_fitness, highest_fitness), _fittness_pow_factor);

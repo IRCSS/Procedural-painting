@@ -357,6 +357,8 @@ public class ScaleStage
 
         fitness_data.Update(fittestMember[0].memberFitness);
 
+        
+
         // -----------------------
         // Print out statistics
 
@@ -421,6 +423,17 @@ public class ScaleStage
     // DEBUG
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     
+    void Debug_rows_sum()
+    {
+        Vector2[] data = new Vector2[compute_resources.original_image_gradient.height];
+        compute_resources.per_row_sum_buffer.GetData(data);
+
+        for(int i = 0; i<data.Length; i++)
+        {
+            Debug.Log(string.Format("row {0}, has row sum: {1}, {2}", i, data[i].x, data[i].y));
+        }
+    }
+
     
     struct parentPair
     {
@@ -467,12 +480,12 @@ public class ScaleStage
     /// </summary>
     void debug_population_member_fitness_value()
     {
-        float[] population_fitness_cpu_values = new float[evolution_settings.populationPoolNumber];
+        Vector2[] population_fitness_cpu_values = new Vector2[evolution_settings.populationPoolNumber];
         compute_resources.population_pool_fitness_buffer.GetData(population_fitness_cpu_values);
 
         for (int i = 0; i < evolution_settings.populationPoolNumber; i++)
         {
-            Debug.Log(string.Format("population {0}, has fitnesss {1}", i, population_fitness_cpu_values[i]));
+            Debug.Log(string.Format("population {0}, has fitnesss {1}, {2}", i, population_fitness_cpu_values[i].x, population_fitness_cpu_values[i].y));
         }
     }
 
