@@ -163,8 +163,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: 45cb863f24a9575418c33e1beba84a0a, type: 3}
-  blackAnwWhite: 1
+  ImageToReproduce: {fileID: 2800000, guid: 60d7efe5dee11f546a04f10badff350c, type: 3}
+  blackAnwWhite: 0
   series:
   - numberOfStagesInTheSeries: 6
     seriesSetting:
@@ -176,6 +176,7 @@ MonoBehaviour:
         brushSizeLowerBound: 0.1
         brushSizeHigherBound: 0.2
       fitness_settings:
+        costume_mask: {fileID: 0}
         colorTotalWeight: 1
         gradientTotalWeight: 1
         hueWeight: 0.333
@@ -198,6 +199,7 @@ MonoBehaviour:
         brushSizeLowerBound: 0.1
         brushSizeHigherBound: 0.2
       fitness_settings:
+        costume_mask: {fileID: 0}
         colorTotalWeight: 1
         gradientTotalWeight: 1
         hueWeight: 0.333
@@ -220,6 +222,7 @@ MonoBehaviour:
         brushSizeLowerBound: 0.1
         brushSizeHigherBound: 0.5
       fitness_settings:
+        costume_mask: {fileID: 0}
         colorTotalWeight: 1
         gradientTotalWeight: 1
         hueWeight: 0.333
@@ -242,6 +245,7 @@ MonoBehaviour:
         brushSizeLowerBound: 0.3
         brushSizeHigherBound: 0.4
       fitness_settings:
+        costume_mask: {fileID: 0}
         colorTotalWeight: 1
         gradientTotalWeight: 1
         hueWeight: 0.333
@@ -264,6 +268,7 @@ MonoBehaviour:
         brushSizeLowerBound: 0.4
         brushSizeHigherBound: 0.5
       fitness_settings:
+        costume_mask: {fileID: 0}
         colorTotalWeight: 1
         gradientTotalWeight: 1
         hueWeight: 0.333
@@ -286,6 +291,7 @@ MonoBehaviour:
         brushSizeLowerBound: 0.4
         brushSizeHigherBound: 0.5
       fitness_settings:
+        costume_mask: {fileID: 0}
         colorTotalWeight: 1
         gradientTotalWeight: 1
         hueWeight: 0.333
@@ -308,6 +314,7 @@ MonoBehaviour:
         brushSizeLowerBound: 0.4
         brushSizeHigherBound: 0.5
       fitness_settings:
+        costume_mask: {fileID: 0}
         colorTotalWeight: 1
         gradientTotalWeight: 1
         hueWeight: 0.333
@@ -330,6 +337,7 @@ MonoBehaviour:
         brushSizeLowerBound: 1
         brushSizeHigherBound: 3
       fitness_settings:
+        costume_mask: {fileID: 0}
         colorTotalWeight: 1
         gradientTotalWeight: 1
         hueWeight: 0.333

@@ -157,6 +157,9 @@ public class ScaleStage
         // ____________________________________________________________________________________________________
         // Procesing the orignal Image
 
+        if(fitness_settings.costume_mask == null)
+        {
+
         compute_shaders.gaussian_compute.Dispatch(compute_shaders.gaussian_horizontal_handel,
             original_image.width / 8, original_image.height / 8, 1);
 
@@ -170,6 +173,11 @@ public class ScaleStage
             original_image.width / 32, original_image.height / 32, 1);
 
         Graphics.Blit(compute_resources.sobel_out, compute_resources.original_image_gradient);                                                   // Copying over the results in a new read only texture. Random access resource types are not compatible with samplers. So I have to make this copy
+        }
+        else
+        {
+            Graphics.Blit(fitness_settings.costume_mask, compute_resources.original_image_gradient);
+        }
 
         compute_shaders.construct_position_domain_compute.Dispatch(compute_shaders.Debug_Position_Domain_to_Texture_handel,
             original_image.width / 8, original_image.height / 8, 1);
