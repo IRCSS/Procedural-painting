@@ -90,6 +90,8 @@ float wang_rnd(uint seed)
     return ((float)rndint) / float(0xFFFFFFFF);                                                       // 0xFFFFFFFF is max unsigned integer in hexa decimal
 }
 
+#include "LabColorSpace.cginc"
+
 inline Genes mutate_gene(uint seed, uint geneID) 
 {
     Genes toReturn;
@@ -109,10 +111,14 @@ inline Genes mutate_gene(uint seed, uint geneID)
     toReturn.scale      = float2(rnd(seed, 82),                                                       // Scale X.
                                  rnd(seed, 7)) *                                                      // Scale Y.
                                  (scale_up - scale_low) * max(0.2, f) + scale_low;                              // Remap to lower and higher bound of the scale range
-                                                                                                      
-    toReturn.color      = float3(rnd(seed, 62),                                                       // brush strokes color channel. R
-                                 rnd(seed, 13),                                                       // brush strokes color channel. G
-                                 rnd(seed, 662));                                                     // brush strokes color channel. B  
+                              
+    float3 CIELab = float3(rnd(seed, 62),     // brush strokes color channel. L
+                           rnd(seed, 13),     // brush strokes color channel. a
+                           rnd(seed, 662));   // brush strokes color channel. b  
+
+
+
+    toReturn.color = lab2rgb(CIELab);
                                                                                                       
     toReturn.texture_ID = floor(rnd(seed, 992) * 4);                                                  // integer id betwen 0 and 3 inclusive 0 and 3. So 4 elements
 

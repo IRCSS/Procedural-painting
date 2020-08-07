@@ -68,6 +68,14 @@ inline int2 structured_buffer_id_to_texture_pixel(int structured_buffer_id) {
     return int2(x,y);
 }
 
+float3 distance_in_hsv(float3 lhs, float3 rhs) 
+{
+    float3 distance = abs(lhs - rhs);
+    if (distance.x > 0.5) distance.x = 1. - distance.x;
+    return saturate(distance);
+}
+
+#include "LabColorSpace.cginc"
 
 [numthreads(32,32,1)]                                                                                    // image dimensions should be a multiplye of 32 or power of 2. 1024 threads per group
 void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)                                                
@@ -82,12 +90,13 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
     //float3 forged_gradient  = _forged_gradient.  SampleLevel(sampler_forged_gradient, texutre_coordinates, 0).xyz;
 
     float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0).xyz;
-           //original_color = RGBtoHCV(original_color);
+           original_color = rgb2lab(original_color);
 
     float3 forged_color   = _forged.SampleLevel(sampler_forged, texutre_coordinates, 0).xyz;
-           //forged_color   = RGBtoHCV(forged_color);
+           forged_color   = rgb2lab(forged_color);
 
     float3 fittness_color    = 1. - saturate(abs(original_color - forged_color)) ;
+    // float3 fittness_color = 1. - distance_in_hsv(original_color, forged_color);
     //float3 fittness_gradient = 1. - saturate(abs(origina_gradient - forged_gradient));
 
     int   structured_buffer_ID = texture_pixel_to_structured_buffer_ID(id.xy); 

@@ -84,7 +84,7 @@
 
                 vertexPos = mul(brushModelMat,  float4(vertexPos.xyz, 1.));
 
-                //o.vertex  = mul(UNITY_MATRIX_P, float4(vertexPos.xyz, 1.));
+                  o.vertex  = mul(UNITY_MATRIX_P, float4(vertexPos.xyz, 1.));
                   o.vertex  = float4(vertexPos.xyz,1.);
                 return o;
             }
