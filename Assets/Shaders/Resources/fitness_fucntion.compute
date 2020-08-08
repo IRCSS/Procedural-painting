@@ -17,19 +17,14 @@ int                          _population_id_handel;                             
 // Resources for CS_Fitness_Per_Pixel                                                                    
 Texture2D<float4>            _original;                                                                  // the original image we want to replicate. The pixels in this image are used to calculated the fitness of each population
 Texture2D<float4>            _original_gradient;                                                         // a processed version of the original image which has the gradient in each pixel calculated by the sobel filter instead of the rgb value
-//Texture2D<float4>            _forged_gradient;                                                           // Same as above but for the forged attempt
 Texture2D<float4>            _forged;                                                                    // What coames out of the render pipline, it is the visualisation of the population which gets compared to the original
 
 SamplerState                 sampler_original;
 SamplerState                 sampler_forged;
 SamplerState                 sampler_original_gradient;
-//SamplerState                 sampler_forged_gradient;
 
-float _hue_weight;
-float _sat_weight;
-float _val_weight;
-float _color_total_weight;
-float _gradient_total_weight;
+float _Luminacity_weight;
+float _Color_weight;
 
 float _mask_active;
 
@@ -85,9 +80,8 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
                                         (float)id.y / (float)_image_height);                             
 
 
-    float3 origina_gradient = _original_gradient.SampleLevel(sampler_original_gradient, texutre_coordinates, 0).xyz;
-    origina_gradient.x = max(_mask_active, max(origina_gradient.x, max(origina_gradient.y, origina_gradient.z)));
-    //float3 forged_gradient  = _forged_gradient.  SampleLevel(sampler_forged_gradient, texutre_coordinates, 0).xyz;
+    float3 origina_gradient   = _original_gradient.SampleLevel(sampler_original_gradient, texutre_coordinates, 0).xyz;
+           origina_gradient.x = max(_mask_active, max(origina_gradient.x, max(origina_gradient.y, origina_gradient.z)));
 
     float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0).xyz;
            original_color = rgb2lab(original_color);
@@ -95,20 +89,18 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
     float3 forged_color   = _forged.SampleLevel(sampler_forged, texutre_coordinates, 0).xyz;
            forged_color   = rgb2lab(forged_color);
 
-    float3 fittness_color    = 1. - saturate(abs(original_color - forged_color)) ;
-    fittness_color = pow(fittness_color, 4.);
-    // float3 fittness_color = 1. - distance_in_hsv(original_color, forged_color);
-    //float3 fittness_gradient = 1. - saturate(abs(origina_gradient - forged_gradient));
+    float3 fittness_color = 1. - saturate(abs(original_color - forged_color)) ;
+           fittness_color = pow(fittness_color, 4.);
 
     int   structured_buffer_ID = texture_pixel_to_structured_buffer_ID(id.xy); 
-    float maximum_fitness      = (_hue_weight + _sat_weight + _val_weight)*_color_total_weight           // Dividing the score of each pixel by the maximum potential normalize it between 0-1 which means the fitness of the entire image is a nice represnetative percentage. This is only doable if the pixels are homegenouse on their maximum fitness, which is the case here.
-                                 * origina_gradient.x;
-    float pixel_fitness = ((fittness_color.x *_hue_weight + fittness_color.y *_sat_weight + fittness_color.z*_val_weight)
-        * _color_total_weight * origina_gradient.x);
-    _per_pixel_fitness_buffer[structured_buffer_ID] = float2( pixel_fitness, maximum_fitness);
+    float maximum_fitness      = (_Luminacity_weight + 2*_Color_weight) * origina_gradient.x;             // Dividing the score of each pixel by the maximum potential normalize it between 0-1 which means the fitness of the entire image is a nice represnetative percentage. This is only doable if the pixels are homegenouse on their maximum fitness, which is the case here.
+                                
+    float pixel_fitness = ((fittness_color.x *_Luminacity_weight 
+                          + fittness_color.y *_Color_weight 
+                          + fittness_color.z *_Color_weight) * origina_gradient.x);
 
-   // int2 texture_pixel = structured_buffer_id_to_texture_pixel(structured_buffer_ID);                  // Debug used to figure out what I have written 
-   // _debug_texture[texture_pixel] = _per_pixel_fitness_buffer[structured_buffer_ID];                   // in the structured buffer _per_pixel_fitness. this texture can be blitted to the screen in EvolutionManager.cs for debug porpuses
+    _per_pixel_fitness_buffer[structured_buffer_ID] = float2( pixel_fitness, maximum_fitness);  
+  
 }
 
 

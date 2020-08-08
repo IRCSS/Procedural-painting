@@ -7,8 +7,9 @@ using UnityEngine;
 [System.Serializable]
 public class StageSeries
 {
-    public int numberOfStagesInTheSeries;
+    public int numberOfStagesInTheSeries = 1;
     public ScaleStage seriesSetting;
+
 }
 
 
@@ -24,7 +25,7 @@ public class EvolutionManager : MonoBehaviour
     public  Texture               ImageToReproduce;                          // This image is used for the evolution algo and is the ground truth
      public  bool                 blackAnwWhite;                             // wether the image should be painted in black and white. Would be easier to paint
     [Header("Stages")]
-    public  StageSeries[]         series      = new StageSeries[1];          
+    public  SearchSettings        run_settings;  
 
     [Header("Soft References")]
     public   Compute_Shaders      compute_shaders;                           // All the boiler plate code, binding and references for the compute shaders. Look in the comments in the struct for more info 
@@ -58,11 +59,11 @@ public class EvolutionManager : MonoBehaviour
         // Construct the scale stages
         List<ScaleStage> temp = new List<ScaleStage>();
 
-        for(int i =0; i < series.Length; i++)
+        for(int i =0; i < run_settings.stagesSeries.Length; i++)
         {
-            for(int j = 0; j< series[i].numberOfStagesInTheSeries; j++)
+            for(int j = 0; j< run_settings.stagesSeries[i].numberOfStagesInTheSeries; j++)
             {
-                ScaleStage ss = new ScaleStage(series[i].seriesSetting);
+                ScaleStage ss = new ScaleStage(run_settings.runGlobalSettings, run_settings.stagesSeries[i]);
                 temp.Add(ss);
             }
         }

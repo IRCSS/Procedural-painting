@@ -79,30 +79,23 @@ public class Scale_Settings
 public class Fitness_Settings
 {
     public  Texture       costume_mask;
-    public  float         colorTotalWeight              = 1.0f         ;            // This is multiplied with all hsv channels fitness calculaiton and decides how much weight the entire color part of the fitness has. Can be any value, it will then be weighted based on how much the gradient is weighted
-    public  float         gradientTotalWeight           = 1.0f         ;            // How much should the gradient of the pixel be weighted for the total weight. Can be any positive value, will be normalized based on how hight the other values are
-    public  float         hueWeight                     = 0.333f       ;            // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
-    public  float         satWeight                     = 0.333f       ;            // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
-    public  float         valWeight                     = 0.333f       ;            // These three values need to collectivly add up to ONE. used in the fitness function to determine what of the HSV is more important to match
+    
+    
+    public  float         LuminacityWeight              = 0.333f       ;            
+    public  float         ColorWeight                   = 0.333f       ;            
     public  float         fitnessPowFactor              = 2.0f         ;            // Controls how aggersivly the fitness function should favour those in the population pool which are fitter. Higher value for this means faster descend to local minima, but also a possibility of getting stuck there
 
     public Fitness_Settings()
     {
-        colorTotalWeight              = 1.0f     ;
-        gradientTotalWeight           = 1.0f     ;
-        hueWeight                     = 0.333f   ;
-        satWeight                     = 0.333f   ;
-        valWeight                     = 0.333f   ;
+        ColorWeight                   = 1.0f     ;
+        LuminacityWeight              = 1.0f     ;
         fitnessPowFactor              = 2.0f     ;
     }
 
     public Fitness_Settings(Fitness_Settings other)
     {
-        colorTotalWeight              = other.colorTotalWeight      ;
-        gradientTotalWeight           = other.gradientTotalWeight   ;
-        hueWeight                     = other.hueWeight             ;
-        satWeight                     = other.satWeight             ;
-        valWeight                     = other.valWeight             ;
+        ColorWeight                   = other.ColorWeight           ;
+        LuminacityWeight              = other.LuminacityWeight      ;
         fitnessPowFactor              = other.fitnessPowFactor      ;
         costume_mask                  = other.costume_mask          ;    
     }

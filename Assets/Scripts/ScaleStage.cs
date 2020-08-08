@@ -107,6 +107,38 @@ public class ScaleStage
         fitness_settings   = new Fitness_Settings    (other.fitness_settings  );
         scale_settings     = new Scale_Settings      (other.scale_settings    );
     }
+
+    public ScaleStage(GlobalSettings global, PerStageSettings per_stage)    // from settings Constructor
+    {
+
+        evolution_settings = new Evolution_Settings()
+        {
+            populationPoolNumber          = per_stage.populationPoolNumber         ,
+            maximumNumberOfBrushStrokes   = per_stage.maximumNumberOfBrushStrokes  ,
+            brushTexture                  = global.brushTexture                    ,
+            mutationChance                = global.mutationChance                  ,
+            brushSizeLowerBound           = per_stage.brushSizeLowerBound          ,
+            brushSizeHigherBound          = per_stage.brushSizeHigherBound         ,
+        };
+
+        fitness_settings   = new Fitness_Settings()
+        {
+            costume_mask                  = per_stage.costume_mask   ,
+            ColorWeight                   = global.ColorWeight       ,
+            LuminacityWeight              = global.LuminacityWeight  ,
+            fitnessPowFactor              = global.fitnessPowFactor  ,
+        };
+
+        scale_settings     = new Scale_Settings()
+        {
+            sigma                         = per_stage.sigma                     ,
+            gaussian_kernel_size          = per_stage.gaussian_kernel_size      ,
+            sobel_step_size               = per_stage.sobel_step_size           ,
+            position_domain_threshold     = per_stage.position_domain_threshold ,
+            apply_mask                    = per_stage.apply_mask                ,
+        };
+        
+    }
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Initialisation
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -402,13 +434,10 @@ public class ScaleStage
         compute_shaders.gaussian_compute.      SetInt    ("_kernel_size",           scale_settings.gaussian_kernel_size);
         compute_shaders.gaussian_compute.      SetFloat  ("_gaussian_sigma",        scale_settings.sigma);
         
-        compute_shaders.compute_fitness_function.SetFloat("_color_total_weight",    fitness_settings.colorTotalWeight);
-        compute_shaders.compute_fitness_function.SetFloat("_gradient_total_weight", fitness_settings.gradientTotalWeight);
-
-        compute_shaders.compute_fitness_function.SetFloat("_hue_weight",  fitness_settings.hueWeight);
-        compute_shaders.compute_fitness_function.SetFloat("_sat_weight",  fitness_settings.satWeight);
-        compute_shaders.compute_fitness_function.SetFloat("_val_weight",  fitness_settings.valWeight);
-        compute_shaders.compute_fitness_function.SetFloat("_mask_active", scale_settings.apply_mask ? 0 : 1);
+   
+        compute_shaders.compute_fitness_function.SetFloat("_Luminacity_weight",  fitness_settings.LuminacityWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_Color_weight",       fitness_settings.ColorWeight);
+        compute_shaders.compute_fitness_function.SetFloat("_mask_active",        scale_settings.apply_mask ? 0 : 1);
     }
 
     private void ClearAllRenderTargets(ref CommandBuffer cb, bool color, bool depth, Color c)
