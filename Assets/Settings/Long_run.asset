@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b05b5ad221aba14c8737a364ac8a8e2, type: 3}
+  m_Name: Long_run
+  m_EditorClassIdentifier: 
+  series:
+  - numberOfStagesInTheSeries: 0
+    seriesSetting:
+      evolution_settings:
+        populationPoolNumber: 64
+        maximumNumberOfBrushStrokes: 64
+        brushTexture: {fileID: 0}
+        mutationChance: 0.015
+        brushSizeLowerBound: 0.25
+        brushSizeHigherBound: 4
+      fitness_settings:
+        costume_mask: {fileID: 0}
+        colorTotalWeight: 1
+        gradientTotalWeight: 1
+        hueWeight: 0.333
+        satWeight: 0.333
+        valWeight: 0.333
+        fitnessPowFactor: 2
+      scale_settings:
+        sigma: 0.1
+        gaussian_kernel_size: 16
+        sobel_step_size: 1
+        position_domain_threshold: 0.1
+        apply_mask: 1

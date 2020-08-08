@@ -96,6 +96,7 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
            forged_color   = rgb2lab(forged_color);
 
     float3 fittness_color    = 1. - saturate(abs(original_color - forged_color)) ;
+    fittness_color = pow(fittness_color, 4.);
     // float3 fittness_color = 1. - distance_in_hsv(original_color, forged_color);
     //float3 fittness_gradient = 1. - saturate(abs(origina_gradient - forged_gradient));
 
