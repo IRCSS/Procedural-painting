@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// DEPRICATED: ALL INITIALISATION NOW HAPENS IN THE GPU
 static class CPUSystems{
 
     

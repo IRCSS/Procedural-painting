@@ -5,9 +5,9 @@ using UnityEngine;
 
 
 [System.Serializable]
-public class StageSeries
+public class StageSeries       // A stage series describes several stages that have the exact same settings. This is a UI edtior sugar so that I dont have to deal with lists that are 200 long
 {
-    public int numberOfStagesInTheSeries = 1;
+    public int        numberOfStagesInTheSeries = 1;
     public ScaleStage seriesSetting;
 
 }
@@ -22,25 +22,36 @@ public class EvolutionManager : MonoBehaviour
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     [Header("Image")]
+    [Tooltip("Put here the image you want to have painted. " +
+        "Make sure it is not bigger than 1080p pixels and is square.")]
     public  Texture               ImageToReproduce;                          // This image is used for the evolution algo and is the ground truth
-     public  bool                 blackAnwWhite;                             // wether the image should be painted in black and white. Would be easier to paint
+
+    [Tooltip("If it is a black and white picture, tick this. " +
+        "It helps the algo narrow down the search and "        +
+        "not worry about color")]
+    public  bool                  blackAnwWhite;                             // wether the image should be painted in black and white. Would be easier to paint
+
     [Header("Stages")]
-    public  SearchSettings        run_settings;  
+    [Tooltip("Drag and drop one of the available settings in the " +
+        "setting folders or create your own")]
+    public  SearchSettings        run_settings;                              // Holds all the actual settings concerning the stages
 
     [Header("Soft References")]
     public   Compute_Shaders      compute_shaders;                           // All the boiler plate code, binding and references for the compute shaders. Look in the comments in the struct for more info 
 
     [Header("Debug")]
+    [Tooltip("This shows the current area the algo is focusing on" +
+        "White indicates the focus areas")]
     public RenderTexture          current_search_domain_visualisation;
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     // Private
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    private ScaleStage[]          stages;
+    private ScaleStage[]          stages;                                    // The actual list of stages is created from the stage series and setting and is saved in this array
     private RenderTexture         current_background;                        // This is the texture used to clear the background with. Each stage updates its newest advances in to this once iti s deintialized
     private uint                  generation_identifier = 0;                 // This number specifies how many generations have already gone by. 
-    private uint                  current_stage;
+    private uint                  current_stage;                             // The stage wwhich is currently being worked on
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
     // START
@@ -76,7 +87,7 @@ public class EvolutionManager : MonoBehaviour
         if (!main_cam) Debug.LogError("Main Camera not found, add a camera to " +
             "the scene and add the main camera tag to it");
 
-        main_cam.orthographic     = true;
+        main_cam.orthographic     = true;                                                                     // Make sure the camera is ortho. Perspecitve camera has a transformation matrix which will screw with everything
         main_cam.aspect           = (float)ImageToReproduce.width/ (float)ImageToReproduce.height;
         main_cam.orthographicSize = 1;
         // ____________________________________________________________________________________________________
@@ -84,7 +95,7 @@ public class EvolutionManager : MonoBehaviour
 
         compute_shaders.Construct_Computes();                                                                 // This sets up all the book keeping needed forthe shaders across different stages such as finding the kernel handels
 
-        current_background = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height, 0);
+        current_background = new RenderTexture(ImageToReproduce.width, ImageToReproduce.height, 0);           // The current background is used to clear the render target of the camera after each drawing. Each stage paints on top of results of the previous stage
         current_background.Create();
         Graphics.Blit(Texture2D.whiteTexture, current_background);
 
@@ -92,8 +103,9 @@ public class EvolutionManager : MonoBehaviour
         // ____________________________________________________________________________________________________
         // Stage initialisation
 
-        current_stage = (uint) stages.Length - 1;
-        stages[current_stage].initialise_stage(ImageToReproduce, current_background, compute_shaders, blackAnwWhite, current_stage, this);
+        current_stage = (uint) stages.Length - 1;                                                             // Starting from the last stage and counting down.
+        stages[current_stage].initialise_stage(ImageToReproduce, 
+            current_background, compute_shaders, blackAnwWhite, current_stage, this);
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -104,7 +116,7 @@ public class EvolutionManager : MonoBehaviour
     {
 
         generation_identifier++;
-        bool isStuckInLocalMinima = stages[current_stage].update_stage(generation_identifier);
+        bool isStuckInLocalMinima = stages[current_stage].update_stage(generation_identifier);                // It switchs from one stage to the next, if the current stage is stuck in local minima 
 
         //isStuckInLocalMinima = false;
 

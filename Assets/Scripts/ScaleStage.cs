@@ -6,12 +6,12 @@ using UnityEngine.Rendering;
 
 public class FitnessData
 {
-    private float                  instantaneous;
-    private float                  firstDerivative;
-    private float                  secondDerivative;
+    private float                  instantaneous;                         // Value of the fitness right now in this frame
+    private float                  firstDerivative;                       // Change in the fitness compared to the last frame
+    private float                  secondDerivative;                      // Change in the change of the fitness
                                    
-    private float                  last_instantaneous;
-    private float                  last_firstDerivative;
+    private float                  last_instantaneous;                    // Used to keep track of the derivatives
+    private float                  last_firstDerivative;                  // Used to keep track of the derivatives
 
     private AverageContainer       average_fitness;                       // average of the instantanous fitness of the fitest member of the population
     private AverageContainer       average_fitness_dt;                    // average of the change of the fitness over time. First derivatve
@@ -19,22 +19,22 @@ public class FitnessData
 
     public bool IsInMinima()
     {
-        return (average_fitness_dt.GetAverage() < 0.00001f);
+        return (average_fitness_dt.GetAverage() < 0.00001f);              // This determines when the stage is stuck in a local minima and should switch
     }
 
     public FitnessData ()
     {
-        instantaneous        =    0.0f                      ;
-        firstDerivative      =    0.0f                      ;
-        secondDerivative     =    0.0f                      ;   
-        last_firstDerivative =   -1000.0f                   ;               // The negative values are there to fake a first push to first derivative, other wise it starts at a local minima
-        last_instantaneous   =   -1000.0f                   ;               // The negative values are there to fake a first push to first derivative, other wise it starts at a local minima
-        average_fitness      =   new AverageContainer(1200)  ;     
-        average_fitness_dt   =   new AverageContainer(1200)  ;  
-        average_ftiness_dt2  =   new AverageContainer(1200)  ; 
+        instantaneous        =    0.0f                       ;
+        firstDerivative      =    0.0f                       ;
+        secondDerivative     =    0.0f                       ;   
+        last_firstDerivative =   -1000.0f                    ;             // The negative values are there to fake a first push to first derivative, other wise it starts at a local minima
+        last_instantaneous   =   -1000.0f                    ;             // The negative values are there to fake a first push to first derivative, other wise it starts at a local minima
+        average_fitness      =   new AverageContainer(1200)  ;             // The 1200 determines over how many frames the average should be taken off
+        average_fitness_dt   =   new AverageContainer(1200)  ;             // The 1200 determines over how many frames the average should be taken off
+        average_ftiness_dt2  =   new AverageContainer(1200)  ;             // The 1200 determines over how many frames the average should be taken off
     }
 
-    public void Update(float current_fitness)
+    public void Update(float current_fitness)                              // Calculate the instantounse of derviatives and add everything to the container that calculates the average
     {
         instantaneous    = current_fitness;
         firstDerivative  = instantaneous   - last_instantaneous;
@@ -177,7 +177,7 @@ public class ScaleStage
         rendering_material.SetBuffer         ("_population_pool",         compute_resources.population_pool_buffer);
         rendering_material.SetBuffer         ("_population_pool",         compute_resources.population_pool_buffer);
         fittest_rendering_material.SetBuffer ("_population_pool",         compute_resources.population_pool_buffer);
-        fittest_rendering_material.SetBuffer ("_fittest_member" ,         compute_resources.fittest_member_buffer);
+        fittest_rendering_material.SetBuffer ("_fittest_member" ,         compute_resources.fittest_member_buffer );
         // ____________________________________________________________________________________________________
         // Compute Shader Bindings
 
@@ -189,7 +189,7 @@ public class ScaleStage
         // ____________________________________________________________________________________________________
         // Procesing the orignal Image
 
-        if(fitness_settings.costume_mask == null)
+        if(fitness_settings.costume_mask == null)                                                                                                // Only calculate the gaussian sobel mask for this stage, if the user is not providing a hand made one
         {
 
         compute_shaders.gaussian_compute.Dispatch(compute_shaders.gaussian_horizontal_handel,
@@ -228,33 +228,24 @@ public class ScaleStage
 
         Debug.Log(string.Format("The number of pixels in the position domains is: {0}", counter[0]));
 
-        compute_shaders.Bind_Compute_Resources(ImageToReproduce, compute_resources, evolution_settings);
+        
         // ____________________________________________________________________________________________________
         // CPU Arrays initalization
 
         // -----------------------
-        // Population Pool first gen initializatiopn
-
-        // Old CPU Populasation
+        // Population Pool first gen initialization
+        
         int total_number_of_genes = (int)(evolution_settings.populationPoolNumber * evolution_settings.maximumNumberOfBrushStrokes);
-        //Genes[] initialPop = new Genes[total_number_of_genes];
 
-        //if(!is_black_white)
-        //CPUSystems.InitatePopulationMember(ref initialPop, evolution_settings.brushSizeLowerBound, 
-        //    evolution_settings.brushSizeHigherBound);
-        //else
-        //CPUSystems.InitatePopulationMemberBW(ref initialPop, evolution_settings.brushSizeLowerBound,
-        //    evolution_settings.brushSizeHigherBound);
+        if (total_number_of_genes % 32 != 0)
+            Debug.LogError("Total number of genes is not a multply of 128. Either change the compute dispatches in " +
+                "script, or make sure the Population pool number times the maximum brush strokes number is a multiple of 128");
 
-        // -----------------------
-        // Sending the Data to the GPU
-        //compute_resources.population_pool_buffer.SetData(initialPop);
-
-        if (!is_black_white)
-            compute_shaders.compute_selection_functions.Dispatch(                                                                              // This copies the cross overed genes from second gen to the main buffer for rendering in next frame and also mutates some of them
+            if (!is_black_white)
+            compute_shaders.compute_selection_functions.Dispatch(                                                                             // Generates the first batch of genes (brush strokes)
                 compute_shaders.populate_population, total_number_of_genes / 128, 1, 1);
         else
-            compute_shaders.compute_selection_functions.Dispatch(                                                                              // This copies the cross overed genes from second gen to the main buffer for rendering in next frame and also mutates some of them. However mutation is in black and white
+            compute_shaders.compute_selection_functions.Dispatch(                                                                             // does the same but it only does it in black and white
                compute_shaders.populate_population_BW, total_number_of_genes / 128, 1, 1);
 
 
@@ -429,7 +420,6 @@ public class ScaleStage
         compute_shaders.compute_selection_functions.SetFloat      ("_fittness_pow_factor", fitness_settings.fitnessPowFactor);
 
         compute_shaders.sobel_compute_original.SetInt("_kernel_size", scale_settings.sobel_step_size);
-        compute_shaders.sobel_compute_forged.  SetInt("_kernel_size", scale_settings.sobel_step_size);
 
         compute_shaders.gaussian_compute.      SetInt    ("_kernel_size",           scale_settings.gaussian_kernel_size);
         compute_shaders.gaussian_compute.      SetFloat  ("_gaussian_sigma",        scale_settings.sigma);

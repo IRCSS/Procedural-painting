@@ -12,12 +12,10 @@ public class Compute_Shaders
     // Hard references for the computes
     public ComputeShader compute_fitness_function;                            // holds all code for the fitness function of the genetic evolution algo
     public ComputeShader compute_selection_functions;                         // this file contains the compute kernels for the adjusting the fitness to accmulative weighted probablities, selecting parents, cross over as well as mutation
-    public ComputeShader gaussian_compute;
-    public ComputeShader sobel_compute_original;
-    public ComputeShader construct_position_domain_compute;
+    public ComputeShader gaussian_compute;                                    // This holds a screen space pass gaussian blur in compute shaders. This is used to filter out tinner feautres and soft edges, and focus the algo on more dominant edges
+    public ComputeShader sobel_compute_original;                              // Holds a screen pass sobel effect used for edge detection. After the gaussian, sobel finds/ defines the edges on the feature level which the gaussian defines
+    public ComputeShader construct_position_domain_compute;                   // This creates a search domain for the algorithmn. To paint finer details this creates areas where the algo should focus on
 
-    [HideInInspector]
-    public ComputeShader sobel_compute_forged;
     // ____________________________________________________________________________________________________
     // handel ides for each kernel
 
@@ -43,25 +41,23 @@ public class Compute_Shaders
     [HideInInspector]
     public int sobel_handel_original;                                        // This applies a sobel filter on an image. Which creates a per pixel gradient image
     [HideInInspector]
-    public int sobel_handel_forged;                                          // same as above but for the forged image. This is another instance of the same compute shader
+    public int gaussian_horizontal_handel;                                   // Applies the gaussian filter on the horizontal direction. Since the gaussian filter is symetric, you can divide it like this
     [HideInInspector]
-    public int gaussian_horizontal_handel;
+    public int gaussian_vertical_handel;                                     // Applies the gaussian filter on top of the horizontal contribution vertically
     [HideInInspector]
-    public int gaussian_vertical_handel;
+    public int Construct_Position_Domain_handel;                             // Creates a mask where the algo focus on to get the finer details. This constrain is applied in the mutation kernels
     [HideInInspector]
-    public int Construct_Position_Domain_handel;
+    public int Debug_Position_Domain_to_Texture_handel;                      // I use this to create a debug texture to visualise where the actual search is happening. It constrains where the brushes are spawned
     [HideInInspector]
-    public int Debug_Position_Domain_to_Texture_handel;
+    public int populate_population;                                          // Used to initiate the population, it baisicly creates a random set of painting attempts
     [HideInInspector]
-    public int populate_population;
-    [HideInInspector]
-    public int populate_population_BW;
+    public int populate_population_BW;                                       // Same as above, but the black and white version
 
     // ____________________________________________________________________________________________________
     // CONSTRUCTOR: Populate the bindings
-    public void Construct_Computes()
+    public void Construct_Computes()                                         // This function finds all the integer handels for the kernels once
     {
-        sobel_compute_forged = Object.Instantiate(sobel_compute_original);                                  // We are going to need two instances of this compute shader so that we can staticly bind textures to it without the need of rebinding during the frame updating
+        
 
         per_pixel_fitness_kernel_handel         = compute_fitness_function.         FindKernel("CS_Fitness_Per_Pixel");
         sun_rows_kernel_handel                  = compute_fitness_function.         FindKernel("CS_Sum_Rows");
@@ -75,7 +71,6 @@ public class Compute_Shaders
         populate_population                     = compute_selection_functions.      FindKernel("CS_populate_population");
         populate_population_BW                  = compute_selection_functions.      FindKernel("CS_populate_population_BW");
         sobel_handel_original                   = sobel_compute_original.           FindKernel("Sobel");
-        sobel_handel_forged                     = sobel_compute_forged.             FindKernel("Sobel");
         gaussian_vertical_handel                = gaussian_compute.                 FindKernel("CS_gaussian_vertical");
         gaussian_horizontal_handel              = gaussian_compute.                 FindKernel("CS_gaussian_horizontal");
         Construct_Position_Domain_handel        = construct_position_domain_compute.FindKernel("CS_Construct_Position_Domain");
@@ -84,7 +79,7 @@ public class Compute_Shaders
     }
 
     
-    public void Bind_Compute_Resources(Texture target_image, Compute_Resources compute_resources, Evolution_Settings evolution_settings)
+    public void Bind_Compute_Resources(Texture target_image, Compute_Resources compute_resources, Evolution_Settings evolution_settings)   // binds all the buffers and textures and the uniforms that dont change in runtime to the relevant compute shader 
     {
         bind_population_pool_buffer                     (compute_resources.population_pool_buffer);
         bind_second_gen_buffer                          (compute_resources.second_gen_population_pool_buffer);
@@ -100,7 +95,6 @@ public class Compute_Shaders
         bind_original_texture         (target_image);
         bind_forged_texture           (compute_resources.compute_forged_in_render_texture);
         bind_orignal_gradient_texture (compute_resources.original_image_gradient);
-        bind_forged_gradient_texture  (compute_resources.forged_image_gradient);
         bind_sobel_out                (compute_resources.sobel_out);
         bind_original_blured          (compute_resources.original_image_blured);
         bind_gaussian_out             (compute_resources.gaussian_out);
@@ -194,7 +188,6 @@ public class Compute_Shaders
     private void bind_sobel_out(Texture sobel_results)
     {
         sobel_compute_original.SetTexture  (sobel_handel_original,           "_result",   sobel_results);
-        sobel_compute_forged.SetTexture    (sobel_handel_forged,             "_result",   sobel_results);
     }
 
     private void bind_orignal_gradient_texture(Texture original_gradient)
@@ -203,14 +196,9 @@ public class Compute_Shaders
         construct_position_domain_compute.SetTexture(Construct_Position_Domain_handel,        "_mask",              original_gradient);
         construct_position_domain_compute.SetTexture(Debug_Position_Domain_to_Texture_handel, "_mask",              original_gradient);
     }
-    private void bind_forged_gradient_texture(Texture forged_gradient)
-    {
-        compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged_gradient", forged_gradient);
-    }
-
+    
     private void bind_forged_texture(Texture forged)
     {
-        sobel_compute_forged.SetTexture    (sobel_handel_forged,             "_source",   forged);
         compute_fitness_function.SetTexture(per_pixel_fitness_kernel_handel, "_forged",   forged);
     }
 
@@ -228,8 +216,6 @@ public class Compute_Shaders
         compute_selection_functions.SetInt      ("_image_height",     (int) height);
         sobel_compute_original.     SetInt      ("_source_width",     (int) width) ;
         sobel_compute_original.     SetInt      ("_source_height",    (int) height);
-        sobel_compute_forged.       SetInt      ("_source_width",     (int) width) ;
-        sobel_compute_forged.       SetInt      ("_source_height",    (int) height);
         gaussian_compute.           SetInt      ("_source_width",     (int) width) ;
         gaussian_compute.           SetInt      ("_source_height",    (int) height);
         construct_position_domain_compute.SetInt("_image_width",      (int) width) ;
@@ -273,19 +259,18 @@ public class Compute_Resources                                               // 
     public ComputeBuffer          population_accumlative_prob_buffer;        // This buffer contains the result of transforming the fitness values to an wieghted accmulative probabilities form
     public ComputeBuffer          second_gen_parents_ids_buffer;             // a buffer of pairs of IDs. Each id refers to one of the parents which is used for the cross over algo. Papulated in Computeshader
     public ComputeBuffer          fittest_member_buffer;                     // This buffer contains only one element which is the info of the fittest member of the population pool. It is written to in the compute shader and later in the looop the fittest member is redrawn for visualisation. I am sure there are better ways of doing this without a structured buffer. 
-    public ComputeBuffer          position_domain_buffer;
-    public ComputeBuffer          positon_domain_arguments_buffer;
+    public ComputeBuffer          position_domain_buffer;                    // This is constructed by the construct_position_domain_compute. It is an area which the algo focuses on its search. This is an APPEND BUFFER
+    public ComputeBuffer          positon_domain_arguments_buffer;           // Since it is not clear how large the buffer would be ahead of the time, this buffer is used plus the append buffer. This buffer holds the count
 
 
     public RenderTexture          active_texture_target;                     // the population is renedred in this render texture, it is compared per pixel for fitness in compute later
     public RenderTexture          compute_forged_in_render_texture;          // After rendering is done and written to active render texture, the results is coppied here, Without this copy, I was getting some weird issues with bindings and rebinding
     public RenderTexture          debug_texture;                             // texture used to visualize the compute calclulations. It is not always bound, you need to write code to bind it. I am just leaving it here so that I dont need to create a new texture every time for debuging
     public RenderTexture          clear_base;                                // This is the image used to clear the render target. After the first stage, this would be the basis which the second/ thirds etc stages would paint on
-    public RenderTexture          original_image_blured;
+    public RenderTexture          original_image_blured;                     // Original image after gaussian. The gaussian filter filters out the noise edges to keep the important ones
     public RenderTexture          original_image_gradient;                   // This texture contains a version of the original image that has the sobel filter applied to it. This filter creates an image gradient which is used for calculating fitness of a pixel
-    public RenderTexture          forged_image_gradient;                     // same as above but for the forged attmpted by the AI
     public RenderTexture          sobel_out;                                 // The sobel shader first writes its results to this. The reason why it doesnt directly write to the input of the fitness function is that this texture needs random access, which is not compatible with samplers.
-    public RenderTexture          gaussian_out;
+    public RenderTexture          gaussian_out;                              // out put of the gaussian filter. Since gaussian is multipass, you need this for buffer. You can combine it with other textures, however for debug porpuses I leave it like this
     // ____________________________________________________________________________________________________
     // Constructor
     public void Consruct_Buffers(Texture Image_to_reproduce, RenderTexture stage_base, Evolution_Settings evolution_setting)
@@ -301,9 +286,9 @@ public class Compute_Resources                                               // 
         population_accumlative_prob_buffer = new ComputeBuffer((int)evolution_setting.populationPoolNumber, sizeof(float)                      );          // You could combin this and the fitnes buffer together, I am keeping them seprated for the sake of debuging ease
         second_gen_parents_ids_buffer      = new ComputeBuffer((int)evolution_setting.populationPoolNumber, sizeof(int)   * 2                  );          // ids (int) paris. Needs to change to smoething else if you have more than 2 parent
         fittest_member_buffer              = new ComputeBuffer(1,                                           sizeof(float) + sizeof(int)        );          // This is a single value. Not sure how to bind it as random read write access without creating an entire buffer
-        position_domain_buffer             = new ComputeBuffer((int)pixel_count_in_image,                   sizeof(float) * 2, ComputeBufferType.Append);
+        position_domain_buffer             = new ComputeBuffer((int)pixel_count_in_image,                   sizeof(float) * 2, ComputeBufferType.Append);  // We dont know how large the search domain is a head of the time. It depends on the gaussian/ sobel parameters, so we use an append buffer
         position_domain_buffer.SetCounterValue(0);
-        positon_domain_arguments_buffer    = new ComputeBuffer(1, sizeof(int) * 4, ComputeBufferType.IndirectArguments);
+        positon_domain_arguments_buffer    = new ComputeBuffer(1, sizeof(int) * 4, ComputeBufferType.IndirectArguments);                                   // This is used to hold count number of the append buffer. The value of its length is coppied in to this in run time
         int[] ini_value = new int[4] { 0, 0, 0, 0 };
         positon_domain_arguments_buffer.SetData(ini_value);
 
@@ -346,12 +331,6 @@ public class Compute_Resources                                               // 
         };
 
         original_image_blured.Create();
-
-        forged_image_gradient = new RenderTexture(active_texture_target)
-        {
-            wrapMode          = TextureWrapMode.Clamp,
-        };
-        forged_image_gradient.Create();
 
         sobel_out = new RenderTexture(active_texture_target)
         {
@@ -396,7 +375,6 @@ public class Compute_Resources                                               // 
 
         original_image_blured.             Release();
         original_image_gradient.           Release();
-        forged_image_gradient.             Release();
         sobel_out.                         Release();
         gaussian_out.                      Release();
 

@@ -49,11 +49,12 @@ public class Evolution_Settings
 [System.Serializable]
 public class Scale_Settings
 {
-    public float       sigma                         = 0.1f         ;            // standard deviation of the gaussian filter, which controls the weight of each sample in the averaging// standard deviation of the gaussian filter
+    public float       sigma                         = 16f          ;            // standard deviation of the gaussian filter, which controls the weight of each sample in the averaging// standard deviation of the gaussian filter
     public int         gaussian_kernel_size          = 16           ;            // large kernel size create better quality and more blur with cost of performance. bigger kernel -> more samples 
     public int         sobel_step_size               = 1            ;            // how large is the step to left and right for samples use to measure image gradient
-    public float       position_domain_threshold     = 0.1f         ;
-    public bool        apply_mask                    = true         ;
+    public float       position_domain_threshold     = 0.1f         ;            // The output of the gaussian sobel is passed through here. Any value lower than this threshold is discarded in the search and the focus is on the mask created from values higher than this threshold 
+    public bool        apply_mask                    = true         ;            // Wether the hand made or the autmaticly generated mask by gaussian sobel should be used on the fitness function too keep the focus on high details areas    
+
     public Scale_Settings()                          
      {
          sigma                         = 0.1f    ;
@@ -78,21 +79,21 @@ public class Scale_Settings
 [System.Serializable]
 public class Fitness_Settings
 {
-    public  Texture       costume_mask;
+    public  Texture       costume_mask;                                          // If the user gives a mask here, this is used instead of the sobel gaussian to determine where the algo should focus on
     
     
-    public  float         LuminacityWeight              = 0.333f       ;            
-    public  float         ColorWeight                   = 0.333f       ;            
-    public  float         fitnessPowFactor              = 2.0f         ;            // Controls how aggersivly the fitness function should favour those in the population pool which are fitter. Higher value for this means faster descend to local minima, but also a possibility of getting stuck there
+    public  float         LuminacityWeight              = 0.333f       ;         // How important limunacity is in the fitness function. This is weighted together with the color           
+    public  float         ColorWeight                   = 0.333f       ;         // How important the color is. Is weighted to gether with luminacity weight   
+    public  float         fitnessPowFactor              = 2.0f         ;         // Controls how aggersivly the fitness function should favour those in the population pool which are fitter. Higher value for this means faster descend to local minima, but also a possibility of getting stuck there
 
-    public Fitness_Settings()
+    public Fitness_Settings()                                                    // Default Constructor
     {
         ColorWeight                   = 1.0f     ;
         LuminacityWeight              = 1.0f     ;
         fitnessPowFactor              = 2.0f     ;
     }
 
-    public Fitness_Settings(Fitness_Settings other)
+    public Fitness_Settings(Fitness_Settings other)                               // Copy Constructor
     {
         ColorWeight                   = other.ColorWeight           ;
         LuminacityWeight              = other.LuminacityWeight      ;

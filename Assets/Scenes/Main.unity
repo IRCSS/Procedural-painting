@@ -163,9 +163,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: de368344cfc3be24dbc3619884f83e34, type: 3}
-  blackAnwWhite: 0
-  run_settings: {fileID: 11400000, guid: f05d0447d79604044b99d64bf94829fe, type: 2}
+  ImageToReproduce: {fileID: 2800000, guid: b19a82a4bb557ff4280772764db294dd, type: 3}
+  blackAnwWhite: 1
+  run_settings: {fileID: 11400000, guid: b067a7e7d97b5f34f95a1c9211e13944, type: 2}
   compute_shaders:
     compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
       type: 3}
@@ -176,7 +176,6 @@ MonoBehaviour:
       type: 3}
     construct_position_domain_compute: {fileID: 7200000, guid: 1d1a5e04cd4b4584bbfece7500e9dcf9,
       type: 3}
-    sobel_compute_forged: {fileID: 0}
     per_pixel_fitness_kernel_handel: 0
     sun_rows_kernel_handel: 0
     sun_column_kernel_handel: 0
@@ -187,7 +186,6 @@ MonoBehaviour:
     mutation_and_copy_handel: 0
     mutation_and_copy_BW_handel: 0
     sobel_handel_original: 0
-    sobel_handel_forged: 0
     gaussian_horizontal_handel: 0
     gaussian_vertical_handel: 0
     Construct_Position_Domain_handel: 0
