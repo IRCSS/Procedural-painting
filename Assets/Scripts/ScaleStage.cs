@@ -276,8 +276,8 @@ public class ScaleStage
             // -----------------------
             // Draw Population Pool Member
 
-            ClearAllRenderTargets(ref stage_command_buffer, true, true, Color.white);
-            stage_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0, 
+            ClearAllRenderTargets(ref stage_command_buffer, true, true, Color.white);                                                          // Each stage paints on top of the result of the previus stage, this is where the result of the preveus stage is first blitted on the screen
+            stage_command_buffer.DrawProcedural(Matrix4x4.identity, rendering_material, 0,                                                     // Actual drawing happens here. The population is drawn to a render target for further assement down the pipeline 
                 MeshTopology.Triangles, (int)evolution_settings.maximumNumberOfBrushStrokes * 6);
 
             // -----------------------
@@ -285,13 +285,6 @@ public class ScaleStage
 
             stage_command_buffer.CopyTexture(compute_resources.active_texture_target, compute_resources.compute_forged_in_render_texture);     // Without copying the rendering results to a new buffer, I was getting weird results after the rendering of the first population member. Seemed like unity unbinds this buffer since it thinks another operation is writing to it and binds a compeletly different buffer as input (auto generated one). The problem is gone if you copy the buffer 
 
-            // -----------------------
-            // Apply sobel effect 
-
-            //stage_command_buffer.DispatchCompute(compute_shaders.sobel_compute_forged, compute_shaders.sobel_handel_forged,                    // This step calculates the gradient of each pixel in the forged image. This is then used for fitness fucntion
-            //    ImageToReproduce.width / 32, ImageToReproduce.height / 32, 1);
-
-            //stage_command_buffer.CopyTexture(compute_resources.sobel_out, compute_resources.forged_image_gradient);
 
             // -----------------------
             //Compute Fitness
@@ -308,8 +301,8 @@ public class ScaleStage
             stage_command_buffer.DispatchCompute(compute_shaders.compute_fitness_function, compute_shaders.sun_rows_kernel_handel,             // Sum up each row to a single value. So a new array will come out of this which is a single column that has as many member as the height of the image
                 ImageToReproduce.height / 32, 1, 1);
 
-            //// dispatch a single thread
-            stage_command_buffer.DispatchCompute(compute_shaders.compute_fitness_function, compute_shaders.sun_column_kernel_handel,
+            // dispatch a single thread
+            stage_command_buffer.DispatchCompute(compute_shaders.compute_fitness_function, compute_shaders.sun_column_kernel_handel,           // sums up all the values of the column which are holding the entire contribution of the row in one float. This float is the sum of the fitness of the entire image
                 1, 1, 1);
         }
 
@@ -326,7 +319,7 @@ public class ScaleStage
 
         stage_command_buffer.DrawProcedural(Matrix4x4.identity, fittest_rendering_material, 0,
             MeshTopology.Triangles, (int)evolution_settings.maximumNumberOfBrushStrokes * 6);
-        stage_command_buffer.Blit(compute_resources.active_texture_target, BuiltinRenderTextureType.CameraTarget);
+        stage_command_buffer.Blit(compute_resources.active_texture_target, BuiltinRenderTextureType.CameraTarget);                             // This is done for the visualisation porpuses, so that you can see the result of the descend real time
 
         if (evolution_settings.populationPoolNumber % 16 != 0)
             Debug.LogError("The population pool number is set to" + evolution_settings.populationPoolNumber +
@@ -367,7 +360,7 @@ public class ScaleStage
 
     public void deinitialize_stage(ref RenderTexture copy_result_in_to)
     {
-        Graphics.Blit(compute_resources.active_texture_target, copy_result_in_to);
+        Graphics.Blit(compute_resources.active_texture_target, copy_result_in_to);                                                              // coppying the last attempt of the stage, for use in the next stage.
         RenderTexture.active = null;
         Camera.main.RemoveCommandBuffer(CameraEvent.AfterEverything, stage_command_buffer);                                                     // Removing the Command buffer from the camera so that this rendering doesnt happen anymore.
         compute_resources.Destruct_Buffers();                                                                                                   // Call the destructor on the GPU buffers. This causes a reference decremeanting on the COM objects
@@ -380,7 +373,7 @@ public class ScaleStage
 
     public bool update_stage(uint generation_id)
     {
-        UpdateBalancingParameters(generation_id);
+        UpdateBalancingParameters(generation_id);                                                                                                // This fuinction binds all the balancing parameters to the compute shaders
 
         MemberIDFitnessPair[] fittestMember = new MemberIDFitnessPair[1];
 

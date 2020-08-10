@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b05b5ad221aba14c8737a364ac8a8e2, type: 3}
-  m_Name: fast_run
+  m_Name: night_over
   m_EditorClassIdentifier: 
   runGlobalSettings:
     brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
@@ -19,7 +19,18 @@ MonoBehaviour:
     ColorWeight: 1
     fitnessPowFactor: 8
   stagesSeries:
-  - numberOfStagesInTheSeries: 3
+  - numberOfStagesInTheSeries: 75
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.01
+    brushSizeHigherBound: 0.04
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 1
+    sobel_step_size: 1
+    position_domain_threshold: 0.4
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 53
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.03
@@ -30,7 +41,7 @@ MonoBehaviour:
     sobel_step_size: 2
     position_domain_threshold: 0.25
     apply_mask: 1
-  - numberOfStagesInTheSeries: 4
+  - numberOfStagesInTheSeries: 53
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.05
@@ -41,7 +52,7 @@ MonoBehaviour:
     sobel_step_size: 2
     position_domain_threshold: 0.25
     apply_mask: 1
-  - numberOfStagesInTheSeries: 4
+  - numberOfStagesInTheSeries: 30
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.1
@@ -52,7 +63,7 @@ MonoBehaviour:
     sobel_step_size: 2
     position_domain_threshold: 0.1
     apply_mask: 1
-  - numberOfStagesInTheSeries: 3
+  - numberOfStagesInTheSeries: 30
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.1
@@ -63,7 +74,7 @@ MonoBehaviour:
     sobel_step_size: 2
     position_domain_threshold: 0.1
     apply_mask: 1
-  - numberOfStagesInTheSeries: 2
+  - numberOfStagesInTheSeries: 10
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.1
@@ -74,7 +85,7 @@ MonoBehaviour:
     sobel_step_size: 4
     position_domain_threshold: 0.1
     apply_mask: 1
-  - numberOfStagesInTheSeries: 2
+  - numberOfStagesInTheSeries: 16
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.3
@@ -85,7 +96,7 @@ MonoBehaviour:
     sobel_step_size: 8
     position_domain_threshold: 0.1
     apply_mask: 1
-  - numberOfStagesInTheSeries: 2
+  - numberOfStagesInTheSeries: 8
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.4
@@ -96,7 +107,7 @@ MonoBehaviour:
     sobel_step_size: 16
     position_domain_threshold: 0.1
     apply_mask: 1
-  - numberOfStagesInTheSeries: 4
+  - numberOfStagesInTheSeries: 2
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.4
@@ -118,7 +129,7 @@ MonoBehaviour:
     sobel_step_size: 1
     position_domain_threshold: -1
     apply_mask: 0
-  - numberOfStagesInTheSeries: 2
+  - numberOfStagesInTheSeries: 4
     populationPoolNumber: 128
     maximumNumberOfBrushStrokes: 32
     brushSizeLowerBound: 0.5

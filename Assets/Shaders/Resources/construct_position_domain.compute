@@ -5,20 +5,20 @@
 // ----------------------------------------------------------------------------------------------------
 // Resources for all the Kernels
 
-Texture2D<float4>              _mask;
-SamplerState                   sampler_mask;
-
-AppendStructuredBuffer<float2> _position_domain_buffer;
-
-
-int                            _image_width;
-int                            _image_height;
-
-float                          _sample_threshold = 0.07;
+Texture2D<float4>              _mask;                                        // This mask is either created by hand and passed on to the settings or automaticly created by a combination of gaussian sobel filter. It signifies important areas, where it s white, the algo will focus on that
+SamplerState                   sampler_mask;                                 
+                                                                             
+AppendStructuredBuffer<float2> _position_domain_buffer;                      // This is an Append Buffer, the position of the pixels that are white on the mask are appended to this buffer, which is used to generate the brush strokes
+                                                                             
+                                                                             
+int                            _image_width;                                 
+int                            _image_height;                                
+                                                                             
+float                          _sample_threshold = 0.07;                     // Any number higher than this value is considered as a white pixel on the mask, which the algo should focus on. The value itself is set in the settings 
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(8,8,1)]                        // 8 in 8 groups, one thread corresponds to a single pixel on the mask image
+[numthreads(8,8,1)]                                                          // 8 in 8 groups, one thread corresponds to a single pixel on the mask image
 void CS_Construct_Position_Domain(uint3 id : SV_DispatchThreadID)
 {
    float2 texutre_coordinates = float2((float)id.x / (float)_image_width,            
@@ -29,14 +29,15 @@ void CS_Construct_Position_Domain(uint3 id : SV_DispatchThreadID)
 
    if (mask.r > _sample_threshold) 
    {
-       _position_domain_buffer.Append(float2(texutre_coordinates.x, 1.- texutre_coordinates.y)); // The sampleLevel method is actually flipping the y/v axis upside down. I am on Direct3D 11, on different platform the -1 I added here needs to go away
+       _position_domain_buffer.Append
+       (float2(texutre_coordinates.x, 1.- texutre_coordinates.y));           // The sampleLevel method is actually flipping the y/v axis upside down. I am on Direct3D 11, on different platform the -1 I added here might need to go away
    }
 }
 
 
-RWTexture2D<float4>            _position_domain_visualiser;
+RWTexture2D<float4>            _position_domain_visualiser;                  // This texture is used to visualise which pixels pass the threshold test. Any pixel white on this texture is an area which the algo will focus on on its search
 
-[numthreads(8, 8, 1)]                        // 8 in 8 groups, one thread corresponds to a single pixel on the mask image
+[numthreads(8, 8, 1)]                                                        // 8 in 8 groups, one thread corresponds to a single pixel on the mask image
 void CS_Debug_Position_Domain_to_Texture(uint3 id : SV_DispatchThreadID)
 {
     float2 texutre_coordinates = float2((float)id.x / (float)_image_width,
@@ -91,7 +92,7 @@ RWStructuredBuffer<float2>     _debug_position_buffer;
 
 uint _generation_seed;
 
-[numthreads(64, 1, 1)]                        //64 in 1 groups, one thread corresponds to a single point used to visualise position search domain
+[numthreads(64, 1, 1)]                                                                               //64 in 1 groups, one thread corresponds to a single point used to visualise position search domain
 void CS_Debug_Position_Domain(uint3 id : SV_DispatchThreadID)
 {
     int position_domain_length = _position_domain_argument_buffer[0].x;

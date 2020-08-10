@@ -16,7 +16,7 @@ int                          _population_id_handel;                             
 // ---------------------------------------------------------------------------------------------------   
 // Resources for CS_Fitness_Per_Pixel                                                                    
 Texture2D<float4>            _original;                                                                  // the original image we want to replicate. The pixels in this image are used to calculated the fitness of each population
-Texture2D<float4>            _original_gradient;                                                         // a processed version of the original image which has the gradient in each pixel calculated by the sobel filter instead of the rgb value
+Texture2D<float4>            _original_gradient;                                                         // a processed version of the original image which has the gradient in each pixel calculated by the sobel filter instead of the rgb value. This might have gone first through a gaussian filter to filter smaller features
 Texture2D<float4>            _forged;                                                                    // What coames out of the render pipline, it is the visualisation of the population which gets compared to the original
 
 SamplerState                 sampler_original;
@@ -38,37 +38,17 @@ RWStructuredBuffer <float2>   _population_fitness_array;                        
 
 
 // ===================================================================================================
-#define EPSILON  1e-10
-// https://www.shadertoy.com/view/4dKcWK
-float3 RGBtoHCV(in float3 rgb)
-{
-    // RGB [0..1] to Hue-Chroma-Value [0..1]
-    // Based on work by Sam Hocevar and Emil Persson
-    float4 p = (rgb.g < rgb.b) ? float4(rgb.bg, -1., 2. / 3.) : float4(rgb.gb, 0., -1. / 3.);
-    float4 q = (rgb.r < p.x) ? float4(p.xyw, rgb.r) : float4(rgb.r, p.yzx);
-    float c = q.x - min(q.w, q.y);
-    float h = abs((q.w - q.y) / (6. * c + EPSILON) + q.z);
-    return float3(h, c, q.x);
-}
 
-
-
-inline int texture_pixel_to_structured_buffer_ID(uint2 texture_pixel) {
+inline int texture_pixel_to_structured_buffer_ID(uint2 texture_pixel) {                                  // Converts xy pixel coordinates to a one dimensional id. It is a classic 2d to 1d index conversion
     return _image_width * texture_pixel.y + texture_pixel.x;
 }
 
-inline int2 structured_buffer_id_to_texture_pixel(int structured_buffer_id) {
+inline int2 structured_buffer_id_to_texture_pixel(int structured_buffer_id) {                            // Does the opposite as above, converts 1D ids in too 2D coordinates
     int y = floor(structured_buffer_id / _image_width);
     int x = fmod(structured_buffer_id, _image_width);
     return int2(x,y);
 }
 
-float3 distance_in_hsv(float3 lhs, float3 rhs) 
-{
-    float3 distance = abs(lhs - rhs);
-    if (distance.x > 0.5) distance.x = 1. - distance.x;
-    return saturate(distance);
-}
 
 #include "LabColorSpace.cginc"
 
@@ -81,7 +61,8 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 
 
     float3 origina_gradient   = _original_gradient.SampleLevel(sampler_original_gradient, texutre_coordinates, 0).xyz;
-           origina_gradient.x = max(_mask_active, max(origina_gradient.x, max(origina_gradient.y, origina_gradient.z)));
+           origina_gradient.x = max(_mask_active,
+               max(origina_gradient.x, max(origina_gradient.y, origina_gradient.z)));                    // The mask is calcualted per color channel, I average it out before apply it uniformly to all 3 channels
 
     float3 original_color = _original.SampleLevel(sampler_original, texutre_coordinates, 0).xyz;
            original_color = rgb2lab(original_color);
@@ -89,14 +70,14 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
     float3 forged_color   = _forged.SampleLevel(sampler_forged, texutre_coordinates, 0).xyz;
            forged_color   = rgb2lab(forged_color);
 
-    float3 fittness_color = 1. - saturate(abs(original_color - forged_color)) ;
-           fittness_color = pow(fittness_color, 4.);
+    float3 fittness_color = 1. - saturate(abs(original_color - forged_color)) ;                          // The Eculidean distance in CIELab space is used to measure the fitness. Lab space has the advantage that is a perceptually uniform color space and produces more accurate fitness 
+           fittness_color = pow(fittness_color, 4.);                                                     // The power here artificially increases the difference between diferent fitnesses. Higher power is more expensive, means getting faster to the results, and increases the chance of getting stuck in a local minima
 
     int   structured_buffer_ID = texture_pixel_to_structured_buffer_ID(id.xy); 
-    float maximum_fitness      = (_Luminacity_weight + 2*_Color_weight) * origina_gradient.x;             // Dividing the score of each pixel by the maximum potential normalize it between 0-1 which means the fitness of the entire image is a nice represnetative percentage. This is only doable if the pixels are homegenouse on their maximum fitness, which is the case here.
+    float maximum_fitness      = (_Luminacity_weight + 2*_Color_weight) * origina_gradient.x;            // The maximum potential fitness of each pixel is passed on further to be able to do things like normalizing the fitness scores to 0-1
                                 
     float pixel_fitness = ((fittness_color.x *_Luminacity_weight 
-                          + fittness_color.y *_Color_weight 
+                          + fittness_color.y *_Color_weight                                              // The weight of the luminacity and hue/saturation are different to allow for some artisitc control over the percision of each component
                           + fittness_color.z *_Color_weight) * origina_gradient.x);
 
     _per_pixel_fitness_buffer[structured_buffer_ID] = float2( pixel_fitness, maximum_fitness);  
@@ -113,8 +94,8 @@ void CS_Fitness_Per_Pixel(uint3 id : SV_DispatchThreadID)
 void CS_Sum_Rows(uint3 id : SV_DispatchThreadID)                                                         
 {                                                                                                        
                                                                                                          
-    int2  texutre_pixel = int2( 0, id.x);                                                                
-    float2 sum          = float2(0.0f, 0.0f);                                                                          
+    int2   texutre_pixel = int2( 0, id.x);                                                                
+    float2 sum           = float2(0.0f, 0.0f);                                                                          
                                                                                                          
     for (int i = 0; i < _image_width; i++) {                                                             
                 texutre_pixel.x      = i;                                                                

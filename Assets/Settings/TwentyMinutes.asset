@@ -1,0 +1,142 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b05b5ad221aba14c8737a364ac8a8e2, type: 3}
+  m_Name: TwentyMinutes
+  m_EditorClassIdentifier: 
+  runGlobalSettings:
+    brushTexture: {fileID: 2800000, guid: 95aea88e3975f89438bc47a615aa4c5b, type: 3}
+    mutationChance: 0.015
+    LuminacityWeight: 1
+    ColorWeight: 1
+    fitnessPowFactor: 8
+  stagesSeries:
+  - numberOfStagesInTheSeries: 3
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.03
+    brushSizeHigherBound: 0.07
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 2
+    sobel_step_size: 2
+    position_domain_threshold: 0.25
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 4
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.05
+    brushSizeHigherBound: 0.2
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 4
+    sobel_step_size: 2
+    position_domain_threshold: 0.25
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 4
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.1
+    brushSizeHigherBound: 0.2
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 4
+    sobel_step_size: 2
+    position_domain_threshold: 0.1
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 3
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.1
+    brushSizeHigherBound: 0.2
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 4
+    sobel_step_size: 2
+    position_domain_threshold: 0.1
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 2
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.1
+    brushSizeHigherBound: 0.4
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 4
+    sobel_step_size: 4
+    position_domain_threshold: 0.1
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 2
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.3
+    brushSizeHigherBound: 0.4
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 8
+    sobel_step_size: 8
+    position_domain_threshold: 0.1
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 2
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.4
+    brushSizeHigherBound: 0.5
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 16
+    sobel_step_size: 16
+    position_domain_threshold: 0.1
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 4
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.4
+    brushSizeHigherBound: 0.5
+    costume_mask: {fileID: 0}
+    sigma: 16
+    gaussian_kernel_size: 32
+    sobel_step_size: 32
+    position_domain_threshold: 0.1
+    apply_mask: 1
+  - numberOfStagesInTheSeries: 4
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.1
+    brushSizeHigherBound: 0.75
+    costume_mask: {fileID: 0}
+    sigma: 1
+    gaussian_kernel_size: 1
+    sobel_step_size: 1
+    position_domain_threshold: -1
+    apply_mask: 0
+  - numberOfStagesInTheSeries: 2
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 0.5
+    brushSizeHigherBound: 1.5
+    costume_mask: {fileID: 0}
+    sigma: 1
+    gaussian_kernel_size: 1
+    sobel_step_size: 1
+    position_domain_threshold: -1
+    apply_mask: 0
+  - numberOfStagesInTheSeries: 1
+    populationPoolNumber: 128
+    maximumNumberOfBrushStrokes: 32
+    brushSizeLowerBound: 1
+    brushSizeHigherBound: 3
+    costume_mask: {fileID: 0}
+    sigma: 1
+    gaussian_kernel_size: 1
+    sobel_step_size: 1
+    position_domain_threshold: -1
+    apply_mask: 0

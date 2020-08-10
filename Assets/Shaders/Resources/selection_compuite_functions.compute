@@ -27,21 +27,21 @@ struct Genes
 // ----------------------------------------------------------------------------------------------------
 // REsource for all kernels
 
-uint                         _population_pool_size;
-uint                         _genes_number_per_member;
-RWStructuredBuffer<float>    _population_accumlative_probablities_array;
+uint                         _population_pool_size;                                                   // The number of painting tries that are being processed in parallel
+uint                         _genes_number_per_member;                                                // A gene is a brush stroke (see above) this number corrosponds to how many brush strokes are there on the stage per painting try
+RWStructuredBuffer<float>    _population_accumlative_probablities_array;                              // This buffer holds the accumlative probablity, this is there so that I can pick a parent for the second generation based on the fitness of the first generation
 RWStructuredBuffer<uint2>    _second_gen_parent_ids;                                                  // Buffer has as many members as the population pool size. Each member is made up of an x and a y. The two are parents that produce the next generation
 
-RWStructuredBuffer<Genes>    _second_gen_population_pool;
-RWStructuredBuffer<Genes>    _population_pool;
+RWStructuredBuffer<Genes>    _second_gen_population_pool;                                             // The second generation is first created here before being copied over to the main population pool for the next generation
+RWStructuredBuffer<Genes>    _population_pool;                                                        // The actual data is here, all the brush strokes for all the parallel paintings are saved here
 
 int                          _generation_seed;                                                        // this is used to not generate the same random sequence for all generations.
-float                        _fittness_pow_factor;
+float                        _fittness_pow_factor;                                                    // Used to artifically increase the chance of the fitter members being picked. Higher value means faster descendt but higher  chance of getting stuck in a minima
                                                                                                       
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_normalize_population_probabilities
 
-StructuredBuffer <float2>                  _population_fitness_array;
+StructuredBuffer <float2>                  _population_fitness_array;                                 // For each painting try which is being calculated in parallel, this array contains its corresponding fitness, used to decide the parent of the next generation
 RWStructuredBuffer<MemberIDFitnessPair>    _fittest_member;                                           // this structured buffer only has one member. It is a single int. I am sure there is a way to do this with a groupshared global int, and still read it on the CPU, however since I have to figure out how to do that within unity API I will just use a tiny structured buffer with one member
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_wang_hash
@@ -56,11 +56,11 @@ int                          _image_height;                                     
 // ----------------------------------------------------------------------------------------------------
 // Resource for CS_mutation_and_copy
 
-float                        _mutation_rate;
-float                        _scale_lower_bound;
-float                        _scale_higher_bound;
-StructuredBuffer<float2>     _position_domain_buffer;
-StructuredBuffer<int4>       _position_domain_argument_buffer;
+float                        _mutation_rate;                                                          // Mutation is nesscerly to try out different solutions which were not in the intial pool of brush strokes. This number indicates the probablity of a brush stroke change itself from generation to generation 
+float                        _scale_lower_bound;                                                      // minimum size of a brush stroke in this stage
+float                        _scale_higher_bound;                                                     // maximum size of a brush stroke in this stage
+StructuredBuffer<float2>     _position_domain_buffer;                                                 // This buffer holds the position of all pixels which are available as a center position for a potential brush stroke. It is used to limited the search domain to important areas
+StructuredBuffer<int4>       _position_domain_argument_buffer;                                        // This buffer holds the size of the positon domain buffer. Since the position domain buffer is an append buffer, its size is not known in compile time, hence this whole hack
 
 // ----------------------------------------------------------------------------------------------------
 // -------------------- https://www.shadertoy.com/view/WttXWX
@@ -100,21 +100,19 @@ inline Genes mutate_gene(uint seed, uint geneID)
     int position_domain_length = _position_domain_argument_buffer[0].x;
     int pos_domain_id = (int)floor(rnd(seed, 51)* (float)position_domain_length);
 
-    toReturn.position = _position_domain_buffer[pos_domain_id] * 2.0 - 1.0;
+    toReturn.position = _position_domain_buffer[pos_domain_id] * 2.0 - 1.0;                           // The potential positions which the brushes can take is constrained bz what the position domain buffer holds. Maped to -1 to 1
 
-    //toReturn.position   = float2(rnd(seed, 51),                                                       // Position X. range -1 -> 1
-    //                             rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
                                                                                                       
     toReturn.z_Rotation = rnd(seed, 25) * Tau;                                                        // 0 to 360 degrees or 2 PI for our functions
                                         
     float f = 1. - ((float)geneID / (float)_genes_number_per_member);
     toReturn.scale      = float2(rnd(seed, 82),                                                       // Scale X.
                                  rnd(seed, 7)) *                                                      // Scale Y.
-                                 (scale_up - scale_low) * max(0.2, f) + scale_low;                              // Remap to lower and higher bound of the scale range
+                                 (scale_up - scale_low) * max(0.2, f) + scale_low;                    // Remap to lower and higher bound of the scale range. The bigger brushes are drawn first, then the smaller brushes on top
                               
-    float3 CIELab = float3(rnd(seed, 62),     // brush strokes color channel. L
-                           rnd(seed, 13),     // brush strokes color channel. a
-                           rnd(seed, 662));   // brush strokes color channel. b  
+    float3 CIELab = float3(rnd(seed, 62),                                                             // brush strokes color channel. L
+                           rnd(seed, 13),                                                             // brush strokes color channel. a
+                           rnd(seed, 662));                                                           // brush strokes color channel. b  
 
 
 
@@ -133,17 +131,15 @@ inline Genes mutate_gene_BW(uint seed, uint geneID)
     int position_domain_length = _position_domain_argument_buffer[0].x;
     int pos_domain_id = (int)floor(rnd(seed, 51)* (float)position_domain_length);
 
-    toReturn.position = _position_domain_buffer[pos_domain_id] * 2.0 - 1.0;
+    toReturn.position = _position_domain_buffer[pos_domain_id] * 2.0 - 1.0;                           // The potential positions which the brushes can take is constrained bz what the position domain buffer holds. Maped to -1 to 1
 
-    //toReturn.position   = float2(rnd(seed, 51),                                                       // Position X. range -1 -> 1
-    //                             rnd(seed, 712))* 2.0 - 1.0;                                          // Position Y. range -1 -> 1
                                                                                                       
     toReturn.z_Rotation = rnd(seed, 25) * Tau;                                                        // 0 to 360 degrees or 2 PI for our functions
                
     float f = 1. - ((float)geneID / (float)_genes_number_per_member);
     toReturn.scale      = float2(rnd(seed, 82),                                                       // Scale X.
                                  rnd(seed, 7)) *                                                      // Scale Y.
-                                 (scale_up - scale_low) * max(0.2,f)+ scale_low;                             // Remap to lower and higher bound of the scale range
+                                 (scale_up - scale_low) * max(0.2,f)+ scale_low;                      // Remap to lower and higher bound of the scale range
     float val           = rnd(seed, 62);
 
     toReturn.color      = float3(val, val, val);                                                      // brush strokes color                                                                                                       
@@ -174,34 +170,35 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 
         float f = _population_fitness_array[i].x;
 
-        if(f > highest_fitness)                                              // this finds out which member has the highest fitness. This is used for visualisation at the end of the render loop, the fittest member is redrawn-
+        if(f > highest_fitness)                                                                       // this finds out which member has the highest fitness. This is used for visualisation at the end of the render loop, the fittest member is redrawn-
         {
             highest_fitness  = f;
             m_fittest_member = i;
         }
 
-        if (f < lowest_fitness)
+        if (f < lowest_fitness)                                                                       // The lowest fitness is found here to remap the range of the fitness to increase the contrast between the different  fitness values 
         {
             lowest_fitness = f;
         }
     }
 
-    _fittest_member[0].memberID      = m_fittest_member;
-    _fittest_member[0].memberFitness = highest_fitness/ (_population_fitness_array[m_fittest_member].y);
+    _fittest_member[0].memberID      = m_fittest_member;                                              // statistics for the CPU as well as used to paint the fitesst member again for visualisation
+    _fittest_member[0].memberFitness = highest_fitness/                                               // Also statistics also used on the cpu to determine when the stage is stuck on a local minima and should switch to the next stage
+        (_population_fitness_array[m_fittest_member].y); 
 
 
     float total_sum    = 0.0;
-    for (uint k = 0; k < _population_pool_size; k++) 
+    for (uint k = 0; k < _population_pool_size; k++)                                                  // This loop is simlar to the Level in photoshop, it artificially increases the contrast between the least fit and the fittest by remaping the 0 and 1 to the min and maximum fitness in the population
     {
         total_sum  += pow(inverse_lerp(_population_fitness_array[k].x, lowest_fitness, highest_fitness), _fittness_pow_factor);
-        _population_accumlative_probablities_array[k] = total_sum;                                     // since I am using only one thread, I dont have to worry about writing to the same cacheline I am reading from and false sharing. 
+        _population_accumlative_probablities_array[k] = total_sum;                                     
     }
 
 
     temp = 0.0;
     for (uint j = 0; j < _population_pool_size; j++) {
         temp = _population_accumlative_probablities_array[j];
-        _population_accumlative_probablities_array[j] = temp / total_sum;                              // actual normalization happens here. Now the fitness of each member is converted to a probablity of the member being selection, with regards to how fit the other members are
+        _population_accumlative_probablities_array[j] = temp / total_sum;                             // actual normalization happens here. Now the fitness of each member is converted to a probablity of the member being selection, with regards to how fit the other members are
     } 
 
 
@@ -210,7 +207,7 @@ void CS_transform_fitness_to_probability(uint3 id : SV_DispatchThreadID)
 // ----------------------------------------------------------------------------------------------------
 
 [numthreads(16,1,1)]                                                                                  // 1 threads per population pool member. change to whatever works for you
-void CS_parent_selection(uint3 id : SV_DispatchThreadID)
+void CS_parent_selection(uint3 id : SV_DispatchThreadID)                                              // Randomly pick two parents based on how fit they are. Members with higher fitness have a higher chance of being a parent
 {
     
     float randomNumber = rnd(id.x, 25);
@@ -242,7 +239,7 @@ void CS_debug_wang_hash(uint3 id : SV_DispatchThreadID)
 
 // ----------------------------------------------------------------------------------------------------
 
-[numthreads(128,1,1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+[numthreads(128,1,1)]                                                                                 // 1 threads per gene member. change to whatever works for you
 void CS_cross_over(uint3 id : SV_DispatchThreadID)
 {
     
@@ -260,7 +257,7 @@ void CS_cross_over(uint3 id : SV_DispatchThreadID)
 }
 
 
-[numthreads(128,1,1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+[numthreads(128,1,1)]                                                                                 // 1 threads per gene member. change to whatever works for you
 void CS_mutation_and_copy(uint3 id : SV_DispatchThreadID)
 {
     float rand = rnd(id.x, 45);
@@ -268,11 +265,11 @@ void CS_mutation_and_copy(uint3 id : SV_DispatchThreadID)
     uint  popluation_gene_id = fmod(id.x, _genes_number_per_member);
 
     if (rand <= _mutation_rate) _population_pool[id.x] = mutate_gene(id.x, popluation_gene_id);
-    else _population_pool[id.x] = _second_gen_population_pool[id.x];
+    else                        _population_pool[id.x] = _second_gen_population_pool[id.x];
 
 }
 
-[numthreads(128, 1, 1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+[numthreads(128, 1, 1)]                                                                               // 1 threads per gene member. change to whatever works for you
 void CS_mutation_and_copy_BW(uint3 id : SV_DispatchThreadID)
 {
     float rand = rnd(id.x, 45);
@@ -285,22 +282,22 @@ void CS_mutation_and_copy_BW(uint3 id : SV_DispatchThreadID)
 }
 
 
-[numthreads(128, 1, 1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+[numthreads(128, 1, 1)]                                                                               // 1 threads per gene member. change to whatever works for you
 void CS_populate_population(uint3 id : SV_DispatchThreadID)
 {
     float rand = rnd(id.x, 156);
 
     uint  popluation_gene_id = fmod(id.x, _genes_number_per_member);
-    _population_pool[id.x] = mutate_gene(id.x, popluation_gene_id);
+    _population_pool[id.x] = mutate_gene(id.x, popluation_gene_id);                                   // Mutate genes atm creates a compeltly new gene, so I am using it here to initialize the buffer for the first generation
 
 }
 
-[numthreads(128, 1, 1)]                                                                                  // 1 threads per gene member. change to whatever works for you
+[numthreads(128, 1, 1)]                                                                               // 1 threads per gene member. change to whatever works for you
 void CS_populate_population_BW(uint3 id : SV_DispatchThreadID)
 {
     float rand = rnd(id.x, 156);
 
     uint  popluation_gene_id = fmod(id.x, _genes_number_per_member);
-    _population_pool[id.x] = mutate_gene_BW(id.x, popluation_gene_id);
+    _population_pool[id.x] = mutate_gene_BW(id.x, popluation_gene_id);                                // Mutate genes atm creates a compeltly new gene, so I am using it here to initialize the buffer for the first generation
 
 }
