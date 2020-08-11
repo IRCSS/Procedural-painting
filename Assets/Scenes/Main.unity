@@ -163,8 +163,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccc96ac8c42efed4ea1f23b2d28cf072, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ImageToReproduce: {fileID: 2800000, guid: 7c83ab4282578634da249d62018767ff, type: 3}
-  blackAnwWhite: 0
+  ImageToReproduce: {fileID: 2800000, guid: b6ec9368b1f8b8d41bb829cf49614088, type: 3}
+  blackAnwWhite: 1
   run_settings: {fileID: 11400000, guid: f05d0447d79604044b99d64bf94829fe, type: 2}
   compute_shaders:
     compute_fitness_function: {fileID: 7200000, guid: b5263be85cc7edc499a4b108a87dfae8,
