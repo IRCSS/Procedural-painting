@@ -3,7 +3,7 @@ Procedural Painting Using Genetic Evolution Algorithmen in Unity 3D with compute
 
 This repo contains code for a genetic evolution algorithm implmented in compute shaders in Unity 3D. If you are interested in using the project to generate your own paintings, have a look at the later section of this document or the [Quick Start Page](https://github.com/IRCSS/Procedural-painting/wiki/Quick-Start). For more information on the algorithm and the project itself, read my blog post on medium: https://medium.com/@shahriyarshahrabi/procedural-paintings-with-genetic-evolution-algorithm-6838a6e64703
 
-In the post I go more indepth about the different sections of the pipeline and explain the major sections of the technique. As for information on the source code, the code is well documented.
+In the post I go more indepth about the different sections of the pipeline and explain the major parts of the technique. As for information on the source code, the code is well documented.
 
 ![screenshot](gifs/BlackAndWhiteProtrait.gif)
 
