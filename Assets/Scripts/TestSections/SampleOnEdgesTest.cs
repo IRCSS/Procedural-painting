@@ -54,7 +54,7 @@ public class SampleOnEdgesTest : MonoBehaviour
         // -----------------------------------------
         debug_positions_mat = new Material(Shader.Find("Unlit/pointRenderer"));
         if (!debug_positions_mat) Debug.LogError("No Material found!");
-        debug_positions_mat.SetBuffer("buffer", debug_positions_buffer);
+        debug_positions_mat.SetBuffer("points_buffer", debug_positions_buffer);
         // -----------------------------------------
         Construct_Position_Domain_handel = construct_position_domain_compute.FindKernel("CS_Construct_Position_Domain");
         Debug_Position_Domain_handel     = construct_position_domain_compute.FindKernel("CS_Debug_Position_Domain");

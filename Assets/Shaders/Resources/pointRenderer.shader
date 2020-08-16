@@ -26,7 +26,7 @@ Shader "Unlit/pointRenderer"
                 float4 color  : TEXCOORD0;
             };
 
-            uniform StructuredBuffer<float2> buffer;
+            uniform StructuredBuffer<float2> points_buffer;
 
 
 
@@ -53,7 +53,7 @@ Shader "Unlit/pointRenderer"
             {
                 v2f o;
 
-                o.vertex =float4(buffer[id].xy, 0.5, 1.);
+                o.vertex =float4(points_buffer[id].xy, 0.5, 1.);
                 //o.vertex = mul(UNITY_MATRIX_P, float4(buffer[id].xy, -0.5, 1.));
                 o.color  = float4(wang_rnd(id), wang_rnd(id+651), wang_rnd(id+21), 1.);
                 return o;

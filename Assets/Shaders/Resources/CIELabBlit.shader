@@ -46,11 +46,11 @@
                 // Checking the range of the function and making sure it is within the expected range
                 fixed4 col = tex2D(_MainTex, i.uv);
                 col.xyz = rgb2lab(col.xyz);
-                float4 out_ = float4(0., 0., 0., 1.);
-                if (col.x < 0.0 || col.y < 0.0 || col.z < 0.0) out_.x = 1.;
-                if (col.x > 1.0 || col.y > 1.0 || col.z > 1.0) out_.y = 1.;
+                //float4 out_ = float4(0., 0., 0., 1.);
+                //if (col.x < 0.0 || col.y < 0.0 || col.z < 0.0) out_.x = 1.;
+                //if (col.x > 1.0 || col.y > 1.0 || col.z > 1.0) out_.y = 1.;
 
-                return out_;
+                return col;
             }
             ENDCG
         }

@@ -29,8 +29,20 @@ void CS_Construct_Position_Domain(uint3 id : SV_DispatchThreadID)
 
    if (mask.r > _sample_threshold) 
    {
+      
+      
+
+#if SHADER_API_D3D11 || SHADER_API_D3D11_9X
+
        _position_domain_buffer.Append
-       (float2(texutre_coordinates.x, 1.- texutre_coordinates.y));           // The sampleLevel method is actually flipping the y/v axis upside down. I am on Direct3D 11, on different platform the -1 I added here might need to go away
+       (float2(texutre_coordinates.x, 1. - texutre_coordinates.y));          // The sampleLevel method is actually flipping the y/v axis upside down. I am on Direct3D 11, on different platform the -1 I added here might need to go away
+
+#else         
+       _position_domain_buffer.Append
+       (float2(texutre_coordinates.x, texutre_coordinates.y));
+
+#endif
+
    }
 }
 

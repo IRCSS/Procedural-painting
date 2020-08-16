@@ -52,7 +52,16 @@
                 float2 v2_1       = float2(0.,0.);   // generic name. Now it is uv, I will use the register for other things later
                 
 
+                // Dealing with API differences. Not quite sure what is happening, the DirectX11 is clock wise
+                // and OpenGl counterclockwise as default values, but I would have expected that Unity takes care
+                // of this automaticly. However the triangle stream at this point is already past the Vertex Assembler
+                // which might have a different settings. At anycase differnece between the Z axis between the two 
+                // is to be expected, the projection matrix should have maybe taken care of it, but maybe in Unity
+                // the negation there is handeled by the camera matrix which I am not using. I just changed the 
+                // Z coordinates per API. 
 
+#if SHADER_API_D3D11 || SHADER_API_D3D11_9X
+                // Counter clockwise binding
                 [branch] switch (vertexCase) {
                 case 0: vertexPos = float3(-0.5, 0.5, 0.5); v2_1 = float2(0.,1.);break; // upper left  of the Quad
                 case 1: vertexPos = float3(-0.5,-0.5, 0.5); v2_1 = float2(0.,0.);break;	// lower left  of the Quad
@@ -61,6 +70,19 @@
                 case 4: vertexPos = float3( 0.5, 0.5, 0.5); v2_1 = float2(1.,1.);break;	// upper right of the Quad
                 case 5: vertexPos = float3(-0.5, 0.5, 0.5); v2_1 = float2(0.,1.);break;	// upper left  of the Quad
                 }
+
+               
+#else            // Clock wise binding
+                [branch] switch (vertexCase) {
+                case 0: vertexPos = float3(-0.5, 0.5, -0.5); v2_1 = float2(0.,1.);break; // upper left  of the Quad
+                case 1: vertexPos = float3( 0.5,-0.5, -0.5); v2_1 = float2(1.,0.);break; // lower left  of the Quad
+                case 2: vertexPos = float3(-0.5,-0.5, -0.5); v2_1 = float2(0.,0.);break; // lower right of the Quad
+                case 3: vertexPos = float3( 0.5,-0.5, -0.5); v2_1 = float2(1.,0.);break; // lower right of the Quad
+                case 4: vertexPos = float3(-0.5, 0.5, -0.5); v2_1 = float2(0.,1.);break; // upper right of the Quad
+                case 5: vertexPos = float3( 0.5, 0.5, -0.5); v2_1 = float2(1.,1.);break; // upper left  of the Quad
+                }
+                
+#endif
 
                 v2f o;
                 o.uv     = v2_1;
@@ -84,7 +106,7 @@
 
                 vertexPos = mul(brushModelMat,  float4(vertexPos.xyz, 1.));
 
-                  o.vertex  = mul(UNITY_MATRIX_P, float4(vertexPos.xyz, 1.));
+                  
                   o.vertex  = float4(vertexPos.xyz,1.);
                 return o;
             }
