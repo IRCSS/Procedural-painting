@@ -19,7 +19,7 @@ Copy of the [Quick Start Page](https://github.com/IRCSS/Procedural-painting/wiki
 If you wish to use this project to generate some paintings of your photos, all you have to do is download the content of this repository, download Unity, drag your photo in the inspector and press play. 
 
 #### Unity Version and Platform
-I am using **Unity 2019.1.14f1** on Windows (**DirectX11**). I would recommend you open the project with the same version. If you are on a different platform and using OpenGl or Vulkan, it can be that some of the coordinate systems are flipped and the algorithm wouldn't work correctly. Let me know if that is the case, we might find a fix. 
+I am using **Unity 2019.1.14f1** on Windows (**DirectX11**). I have now ported the code on OpenGL 4.5 as well, but also tested only on windows. I would recommend you open the project with the same version. If you are on a different platform and using OpenGl, it can be that there are further platform differences I am not aware of which cause issues. Just make sure that Unity is used OpenGL and not Vulkan or Metal. (per default it is chosen automaticly, you can change this in Player Settings). Let me know if that is the case, we might find a fix. 
 
 #### Control Center
 After you download the the project, open the Main scene in Assets/Scenes. There is a *Manager* Gameobject, if you click on that, in your Inspector, you will see a *Evolution Manager* attached as a component to this Game Object. This component is the control center of the whole project. 
