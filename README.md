@@ -1,7 +1,7 @@
 Procedural Painting Using Genetic Evolution Algorithmen in Unity 3D with compute shaders
 =================
 
-This repo contains code for a genetic evolution algorithm implmented in compute shaders in Unity 3D. If you are interested in using the project to generate your own paintings, have a look at the later section of this document or the [Quick Start Page](https://github.com/IRCSS/Procedural-painting/wiki/Quick-Start). For more information on the algorithm and the project itself, read my blog post on medium: https://medium.com/@shahriyarshahrabi/procedural-paintings-with-genetic-evolution-algorithm-6838a6e64703
+This repo contains code for a genetic evolution algorithm implemented in compute shaders in Unity 3D. If you are interested in using the project to generate your own paintings, have a look at the later section of this document or the [Quick Start Page](https://github.com/IRCSS/Procedural-painting/wiki/Quick-Start). For more information on the algorithm and the project itself, read my blog post on medium: https://medium.com/@shahriyarshahrabi/procedural-paintings-with-genetic-evolution-algorithm-6838a6e64703
 
 In the post I go more indepth about the different sections of the pipeline and explain the major parts of the technique. As for information on the source code, the code is well documented.
 
@@ -19,10 +19,10 @@ Copy of the [Quick Start Page](https://github.com/IRCSS/Procedural-painting/wiki
 If you wish to use this project to generate some paintings of your photos, all you have to do is download the content of this repository, download Unity, drag your photo in the inspector and press play. 
 
 #### Unity Version and Platform
-I am using **Unity 2019.1.14f1** on Windows (**DirectX11**). I have now ported the code on OpenGL 4.5 as well, but also tested only on windows. I would recommend you open the project with the same version. If you are on a different platform and using OpenGl, it can be that there are further platform differences I am not aware of which cause issues. Just make sure that Unity is used OpenGL and not Vulkan or Metal. (per default it is chosen automaticly, you can change this in Player Settings). Let me know if that is the case, we might find a fix. 
+I am using **Unity 2019.1.14f1** on Windows (**DirectX11**). I have now ported the code on OpenGL 4.5 as well, but also tested only on windows. I would recommend you open the project with the same version. If you are on a different platform and using OpenGl, it can be that there are further platform differences I am not aware of which cause issues. Just make sure that Unity is used OpenGL and not Vulkan or Metal. (per default it is chosen automatically, you can change this in Player Settings). Let me know if that is the case, we might find a fix. 
 
 #### Control Center
-After you download the the project, open the Main scene in Assets/Scenes. There is a *Manager* Gameobject, if you click on that, in your Inspector, you will see a *Evolution Manager* attached as a component to this Game Object. This component is the control center of the whole project. 
+After you download the project, open the Main scene in Assets/Scenes. There is a *Manager* Gameobject, if you click on that, in your Inspector, you will see a *Evolution Manager* attached as a component to this Game Object. This component is the control center of the whole project. 
 
 ![screenshot](https://github.com/IRCSS/Procedural-painting/blob/master/documentation/ControlCenter.jpg)
 
